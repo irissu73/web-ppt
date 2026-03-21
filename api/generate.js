@@ -1,23 +1,110 @@
 import pptxgen from "pptxgenjs";
 
 function buildMockSlides({ type, title }) {
+  if (type === "travel") {
+    return {
+      title,
+      slides: [
+        {
+          slideType: "cover",
+          title,
+          subtitle: "行程安排"
+        },
+        {
+          slideType: "timeline",
+          title: "Day 1 行程",
+          items: ["09:00 出發", "10:30 景點 A", "12:00 午餐"]
+        },
+        {
+          slideType: "bullet",
+          title: "行程提醒",
+          points: ["提早出門", "注意天氣", "保留休息時間"]
+        }
+      ]
+    };
+  }
+
+  if (type === "compare") {
+    return {
+      title,
+      slides: [
+        {
+          slideType: "cover",
+          title,
+          subtitle: "比較分析"
+        },
+        {
+          slideType: "bullet",
+          title: "比較面向",
+          points: ["價格", "功能", "適合對象"]
+        },
+        {
+          slideType: "bullet",
+          title: "初步結論",
+          points: ["A 適合重視穩定", "B 適合重視彈性", "可依需求選擇"]
+        }
+      ]
+    };
+  }
+
+  if (type === "lesson") {
+    return {
+      title,
+      slides: [
+        {
+          slideType: "cover",
+          title,
+          subtitle: "教學說明"
+        },
+        {
+          slideType: "bullet",
+          title: "今天要學什麼",
+          points: ["基本概念", "實際例子", "重點整理"]
+        },
+        {
+          slideType: "bullet",
+          title: "學習重點",
+          points: ["先理解概念", "再看應用", "最後做整理"]
+        }
+      ]
+    };
+  }
+
+  if (type === "proposal") {
+    return {
+      title,
+      slides: [
+        {
+          slideType: "cover",
+          title,
+          subtitle: "提案簡報"
+        },
+        {
+          slideType: "bullet",
+          title: "目前問題",
+          points: ["流程繁瑣", "溝通成本高", "產出速度慢"]
+        },
+        {
+          slideType: "bullet",
+          title: "提案方向",
+          points: ["導入 AI 協助", "標準化流程", "提升產出效率"]
+        }
+      ]
+    };
+  }
+
   return {
     title,
     slides: [
       {
         slideType: "cover",
         title,
-        subtitle: type
+        subtitle: "未指定類型"
       },
       {
         slideType: "bullet",
         title: "重點整理",
         points: ["第一點", "第二點", "第三點"]
-      },
-      {
-        slideType: "timeline",
-        title: "流程安排",
-        items: ["步驟一", "步驟二", "步驟三"]
       }
     ]
   };
