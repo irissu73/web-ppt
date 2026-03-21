@@ -1,1 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>AI幫你做簡報</title>
+</head>
+<body>
 
+<h1>AI幫你做簡報</h1>
+
+<button onclick="go('travel')">行程安排</button>
+<button onclick="go('compare')">比較分析</button>
+<button onclick="go('lesson')">教學說明</button>
+<button onclick="go('proposal')">提案簡報</button>
+
+<script>
+function go(type) {
+  window.location.href = `form.html?type=${type}`;
+}
+</script>
+
+</body>
+</html>
