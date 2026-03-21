@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>建立簡報</title>
+</head>
+<body>
+
+<h2 id="pageTitle"></h2>
+
+<form id="form">
+  
+  <div>
+    <label>簡報主題</label><br/>
+    <input type="text" id="titleInput" required />
+  </div>
+
+  <br/>
+
+  <div>
+    <label>Email（用來寄送編輯網址）</label><br/>
+    <input type="email" id="email" required />
+  </div>
+
+  <br/>
+
+  <div>
+    <label>最後保留日（最多30天）</label><br/>
+    <input type="date" id="expire" required />
+  </div>
+
+  <br/>
+
+  <button type="submit">建立簡報</button>
+
+</form>
+
+<script>
+// 👉 取得 type（從 index.html 傳來）
+const params = new URLSearchParams(window.location.search);
+const type = params.get("type");
+
+// 顯示在標題
+const titleMap = {
+  travel: "行程安排",
+  compare: "比較分析",
+  lesson: "教學說明",
+  proposal: "提案簡報"
+};
+
+document.getElementById("pageTitle").innerText = "建立：" + titleMap[type];
+
+// 👉 限制日期（今天～30天內）
+const today = new Date();
+const maxDate = new Date();
+maxDate.setDate(today.getDate() + 30);
+
+function formatDate(d) {
+  return d.toISOString().split("T")[0];
+}
+
+const expireInput = document.getElementById("expire");
+expireInput.min = formatDate(today);
+expireInput.max = formatDate(maxDate);
+
+// 👉 submit
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const data = {
+    type,
+    title: document.getElementById("titleInput").value,
+    email: document.getElementById("email").value,
+    expiresAt: document.getElementById("expire").value
+  };
+
+  console.log("送出資料：", data);
+
+  // ⚠️ 目前先 mock（還沒接 API）
+  alert("資料已送出（下一步會接API產生PPT）");
+});
+</script>
+
+</body>
+</html>
