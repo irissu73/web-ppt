@@ -172,6 +172,42 @@ async function generatePptBuffer(slideJson) {
   continue;
 }
 
+if (slide.slideType === "compare") {
+  s.addText(slide.title || "", {
+    x: 0.8, y: 0.6, w: 11, h: 0.5,
+    fontSize: 20, bold: true
+  });
+
+  s.addText(slide.leftTitle || "左側", {
+    x: 0.8, y: 1.4, w: 5, h: 0.4,
+    fontSize: 18, bold: true
+  });
+
+  s.addText(slide.rightTitle || "右側", {
+    x: 6.7, y: 1.4, w: 5, h: 0.4,
+    fontSize: 18, bold: true
+  });
+
+  const leftText = (slide.leftPoints || []).map(p => `• ${p}`).join("\n");
+  const rightText = (slide.rightPoints || []).map(p => `• ${p}`).join("\n");
+
+  s.addText(leftText, {
+    x: 0.8, y: 2.0, w: 5, h: 4,
+    fontSize: 16,
+    valign: "top",
+    margin: 0.1
+  });
+
+  s.addText(rightText, {
+    x: 6.7, y: 2.0, w: 5, h: 4,
+    fontSize: 16,
+    valign: "top",
+    margin: 0.1
+  });
+
+  continue;
+}
+
     s.addText("Unsupported slide type", {
       x: 1, y: 1, w: 10, h: 1, fontSize: 18
     });
