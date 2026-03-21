@@ -153,21 +153,24 @@ async function generatePptBuffer(slideJson) {
     }
 
     if (slide.slideType === "timeline") {
-      s.addText(slide.title || "", {
-        x: 0.8, y: 0.6, w: 11, h: 0.5,
-        fontSize: 20, bold: true
-      });
+  s.addText(slide.title || "", {
+    x: 0.8, y: 0.6, w: 11, h: 0.5,
+    fontSize: 20, bold: true
+  });
 
-      const lines = (slide.items || []).map((item, i) => ({
-        text: `${i + 1}. ${item}`
-      }));
+  const text = (slide.items || [])
+    .map((item, i) => `${i + 1}. ${item}`)
+    .join("\n");
 
-      s.addText(lines, {
-        x: 1.0, y: 1.5, w: 10.5, h: 4.5,
-        fontSize: 18, breakLine: true
-      });
-      continue;
-    }
+  s.addText(text, {
+    x: 1.0, y: 1.5, w: 10.5, h: 4.5,
+    fontSize: 18,
+    breakLine: false,
+    valign: "top",
+    margin: 0.1
+  });
+  continue;
+}
 
     s.addText("Unsupported slide type", {
       x: 1, y: 1, w: 10, h: 1, fontSize: 18
