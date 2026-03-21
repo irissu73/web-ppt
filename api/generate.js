@@ -24,28 +24,31 @@ function buildMockSlides({ type, title }) {
     };
   }
 
-  if (type === "compare") {
-    return {
-      title,
-      slides: [
-        {
-          slideType: "cover",
-          title,
-          subtitle: "比較分析"
-        },
-        {
-          slideType: "bullet",
-          title: "比較面向",
-          points: ["價格", "功能", "適合對象"]
-        },
-        {
-          slideType: "bullet",
-          title: "初步結論",
-          points: ["A 適合重視穩定", "B 適合重視彈性", "可依需求選擇"]
-        }
-      ]
-    };
-  }
+if (type === "compare") {
+  return {
+    title,
+    slides: [
+      {
+        slideType: "cover",
+        title,
+        subtitle: "比較分析"
+      },
+      {
+        slideType: "compare",
+        title: "兩者比較",
+        leftTitle: "方案 A",
+        rightTitle: "方案 B",
+        leftPoints: ["價格較高", "穩定性高", "適合重視品質"],
+        rightPoints: ["價格彈性大", "自由度高", "適合重視效率"]
+      },
+      {
+        slideType: "bullet",
+        title: "初步結論",
+        points: ["先看需求", "再看預算", "最後決定選擇"]
+      }
+    ]
+  };
+}
 
   if (type === "lesson") {
     return {
