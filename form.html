@@ -1,3 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>建立簡報</title>
+</head>
+<body>
+
+<h2 id="pageTitle"></h2>
+
+<form id="form">
+  
+  <div>
+    <label>簡報主題</label><br/>
+    <input type="text" id="titleInput" required />
+  </div>
+
+  <br/>
+
+  <div>
+    <label>Email（用來寄送編輯網址）</label><br/>
+    <input type="email" id="email" required />
+  </div>
+
+  <br/>
+
+  <div>
+    <label>最後保留日（最多30天）</label><br/>
+    <input type="date" id="expire" required />
+  </div>
+
+  <br/>
+
+  <button type="submit">建立簡報</button>
+
+</form>
+
 <script>
 const params = new URLSearchParams(window.location.search);
 const type = params.get("type");
@@ -73,3 +110,6 @@ document.getElementById("form").addEventListener("submit", async (e) => {
   }
 });
 </script>
+
+</body>
+</html>
