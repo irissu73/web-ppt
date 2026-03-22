@@ -37,73 +37,120 @@
   <h3>目前產生的 travel data</h3>
   <pre id="result"></pre>
 
-  <script type="module">
-    import { systemConfig } from "./config/systemConfig.js";
+<script type="module">
+  import { systemConfig } from "./config/systemConfig.js";
 
-    const form = document.getElementById("travelForm");
-    const emailInput = document.getElementById("email");
-    const expireInput = document.getElementById("expire");
-    const result = document.getElementById("result");
+  const form = document.getElementById("travelForm");
+  const emailInput = document.getElementById("email");
+  const expireInput = document.getElementById("expire");
+  const result = document.getElementById("result");
 
-    emailInput.required = systemConfig.requireEmail;
+  emailInput.required = systemConfig.requireEmail;
 
-    function formatDateLocal(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
+  function formatDateLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
+  const today = new Date();
+  const maxDate = new Date();
+  maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
 
-    expireInput.min = formatDateLocal(today);
-    expireInput.max = formatDateLocal(maxDate);
+  const minDateStr = formatDateLocal(today);
+  const maxDateStr = formatDateLocal(maxDate);
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+  expireInput.min = minDateStr;
+  expireInput.max = maxDateStr;
 
-      const travelData = {
-        id: crypto.randomUUID(),
-        type: "travel",
-        title: document.getElementById("titleInput").value,
-        email: emailInput.value,
-        expiresAt: expireInput.value
-      };
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      result.textContent = JSON.stringify(travelData, null, 2);
-      console.log("travelData:", travelData);
-    });
-    
-//寄信
-document.getElementById("testMailBtn").addEventListener("click", async () => {
-  try {
-    const email = emailInput.value;
+    console.log("👉 按下建立簡報");
 
-    if (!email) {
-      alert("請先填寫 email");
+    const selectedDate = expireInput.value;
+
+    if (!selectedDate) {
+      alert("請選擇最後保留日");
       return;
     }
 
-    const res = await fetch("/api/send-test-email", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ email })
-    });
+    if (selectedDate < minDateStr || selectedDate > maxDateStr) {
+      alert(`最後保留日需介於 ${minDateStr} ~ ${maxDateStr}`);
+      return;
+    }
 
-    const data = await res.json();
+    const travelData = {
+      id: crypto.randomUUID(),
+      type: "travel",
+      title: document.getElementById("titleInput").value,
+      email: emailInput.value,
+      expiresAt: selectedDate
+    };
 
-    alert(data.message || data.error || "完成");
-  } catch (err) {
-    alert("寄信測試失敗");
-    console.error(err);
-  }
-});
+    result.textContent = JSON.stringify(travelData, null, 2);
+    console.log("travelData:", travelData);
 
-//寄信（止）
-  </script>
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(travelData)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "建立失敗");
+      }
+
+      alert("簡報已建立，並已寄送通知信 📩");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${travelData.title || "presentation"}.pptx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(err.message || "建立失敗");
+      console.error(err);
+    }
+  });
+
+  // 寄信測試
+  document.getElementById("testMailBtn").addEventListener("click", async () => {
+    try {
+      const email = emailInput.value;
+
+      if (!email) {
+        alert("請先填寫 email");
+        return;
+      }
+
+      const res = await fetch("/api/send-test-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email })
+      });
+
+      const data = await res.json();
+
+      alert(data.message || data.error || "完成");
+    } catch (err) {
+      alert("寄信測試失敗");
+      console.error(err);
+    }
+  });
+</script>
 </body>
 </html>
