@@ -1,5 +1,5 @@
 export const systemConfig = {
-  requireEmail: true,     // Email 是否必填
+  requireEmail: false,     // Email 是否必填 true false
   maxExpireDays: 30,      // 最後保留日最大天數
   sendEmailEnabled: false // 是否啟用寄信
 };
