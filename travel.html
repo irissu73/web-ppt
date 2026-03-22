@@ -5,27 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>行程安排</title>
 </head>
+
 <body>
   <h1>行程安排</h1>
+
   <p id="presentationInfo"></p>
+
   <form id="travelForm">
     <div>
-      <label for="titleInput">簡報主題</label><br />
+      <label>簡報主題</label><br />
       <input type="text" id="titleInput" required />
     </div>
 
     <br />
 
     <div>
-      <label for="email">Email</label><br />
+      <label>Email</label><br />
       <input type="email" id="email" />
-      <button type="button" id="testMailBtn">測試寄信</button>
     </div>
 
     <br />
 
     <div>
-      <label for="expire">最後保留日</label><br />
+      <label>最後保留日</label><br />
       <input type="date" id="expire" required />
     </div>
 
@@ -36,196 +38,144 @@
 
   <h3>目前產生的 travel data</h3>
   <pre id="result"></pre>
-  
+
   <h3>localStorage內容</h3>
   <pre id="debugStorage"></pre>
 
-<script type="module">
-  import { systemConfig } from "./config/systemConfig.js";
+  <script type="module">
+    import { systemConfig } from "./config/systemConfig.js";
 
-  const form = document.getElementById("travelForm");
-  const emailInput = document.getElementById("email");
-  const expireInput = document.getElementById("expire");
-  const result = document.getElementById("result");
+    const form = document.getElementById("travelForm");
+    const emailInput = document.getElementById("email");
+    const expireInput = document.getElementById("expire");
+    const result = document.getElementById("result");
+    const presentationInfo = document.getElementById("presentationInfo");
+    const debugStorage = document.getElementById("debugStorage");
 
-const debugStorage = document.getElementById("debugStorage");
+    emailInput.required = systemConfig.requireEmail;
 
-// 把 localStorage 全部印出來
-function renderStorage() {
-  const all = {};
-
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    const value = localStorage.getItem(key);
-    all[key] = value;
-  }
-
-  if (Object.keys(all).length === 0) {
-    debugStorage.textContent = "目前沒有任何 localStorage 資料";
-  } else {
-    debugStorage.textContent = JSON.stringify(all, null, 2);
-  }
-}
-
-
-  emailInput.required = systemConfig.requireEmail;
-
-
-  const presentationInfo = document.getElementById("presentationInfo");
-  
-  const params = new URLSearchParams(window.location.search);
-  const presentationId = params.get("presentationId");
-  
-if (presentationId) {
-  const raw = localStorage.getItem(`presentation:${presentationId}`);
-
-  if (raw) {
-      const savedData = JSON.parse(raw);
-  
-      // 👇 回填表單
-      document.getElementById("titleInput").value = savedData.title || "";
-      emailInput.value = savedData.email || "";
-      expireInput.value = savedData.expiresAt || "";
-  
-      presentationInfo.textContent = `編修模式：${presentationId}`;
-    } else {
-      presentationInfo.textContent = `找不到資料：${presentationId}`;
-    }
-  } else {
-    presentationInfo.textContent = "新建模式";
-  }
-  
-  
-  console.log("presentationId =", presentationId);
-  
-  if (presentationId) {
-    presentationInfo.textContent = `目前簡報 ID：${presentationId}`;
-  } else {
-    presentationInfo.textContent = "目前為新建簡報";
-  }
-
-
-  function formatDateLocal(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  const today = new Date();
-  const maxDate = new Date();
-  maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
-
-  const minDateStr = formatDateLocal(today);
-  const maxDateStr = formatDateLocal(maxDate);
-
-  expireInput.min = minDateStr;
-  expireInput.max = maxDateStr;
-
-  const params = new URLSearchParams(window.location.search);
-  const presentationId = params.get("presentationId");
-
-console.log("presentationId =", presentationId);
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    console.log("👉 按下建立簡報");
-
-    const selectedDate = expireInput.value;
-
-    if (!selectedDate) {
-      alert("請選擇最後保留日");
-      return;
+    // ===== 日期限制 =====
+    function formatDateLocal(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
     }
 
-    if (selectedDate < minDateStr || selectedDate > maxDateStr) {
-      alert(`最後保留日需介於 ${minDateStr} ~ ${maxDateStr}`);
-      return;
-    }
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
 
-const travelData = {
-  presentationId: crypto.randomUUID(),
-  type: "travel",
-  title: document.getElementById("titleInput").value,
-  email: emailInput.value,
-  expiresAt: selectedDate
-};
+    const minDateStr = formatDateLocal(today);
+    const maxDateStr = formatDateLocal(maxDate);
 
-localStorage.setItem(
-  `presentation:${travelData.presentationId}`,
-  JSON.stringify(travelData)
-);
+    expireInput.min = minDateStr;
+    expireInput.max = maxDateStr;
 
-console.log("已寫入 localStorage", travelData.presentationId);
-renderStorage();
-    
+    // ===== 讀網址 presentationId =====
+    const params = new URLSearchParams(window.location.search);
+    const presentationId = params.get("presentationId");
 
-    result.textContent = JSON.stringify(travelData, null, 2);
-    console.log("travelData:", travelData);
+    console.log("presentationId =", presentationId);
 
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(travelData)
-      });
+    // ===== 顯示 localStorage =====
+    function renderStorage() {
+      const all = {};
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "建立失敗");
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        all[key] = value;
       }
 
-      alert("簡報已建立，並已寄送通知信 📩");
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${travelData.title || "presentation"}.pptx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert(err.message || "建立失敗");
-      console.error(err);
+      if (Object.keys(all).length === 0) {
+        debugStorage.textContent = "目前沒有任何資料";
+      } else {
+        debugStorage.textContent = JSON.stringify(all, null, 2);
+      }
     }
-  });
 
-  // 寄信測試
-  document.getElementById("testMailBtn").addEventListener("click", async () => {
-    try {
-      const email = emailInput.value;
+    // ===== 讀資料回填（編修模式） =====
+    if (presentationId) {
+      const raw = localStorage.getItem(`presentation:${presentationId}`);
 
-      if (!email) {
-        alert("請先填寫 email");
+      if (raw) {
+        const data = JSON.parse(raw);
+
+        document.getElementById("titleInput").value = data.title || "";
+        emailInput.value = data.email || "";
+        expireInput.value = data.expiresAt || "";
+
+        presentationInfo.textContent = `編修模式：${presentationId}`;
+      } else {
+        presentationInfo.textContent = `找不到資料：${presentationId}`;
+      }
+    } else {
+      presentationInfo.textContent = "新建模式";
+    }
+
+    renderStorage();
+
+    // ===== submit =====
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const selectedDate = expireInput.value;
+
+      if (!selectedDate) {
+        alert("請選擇日期");
         return;
       }
 
-      const res = await fetch("/api/send-test-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email })
-      });
+      const travelData = {
+        presentationId: presentationId || crypto.randomUUID(),
+        type: "travel",
+        title: document.getElementById("titleInput").value,
+        email: emailInput.value,
+        expiresAt: selectedDate
+      };
 
-      const data = await res.json();
+      // ===== 存 localStorage =====
+      localStorage.setItem(
+        `presentation:${travelData.presentationId}`,
+        JSON.stringify(travelData)
+      );
 
-      alert(data.message || data.error || "完成");
-    } catch (err) {
-      alert("寄信測試失敗");
-      console.error(err);
-    }
-  });
-  
-  renderStorage();
-  
-</script>
+      console.log("已存", travelData);
+
+      result.textContent = JSON.stringify(travelData, null, 2);
+      renderStorage();
+
+      try {
+        const res = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(travelData)
+        });
+
+        if (!res.ok) {
+          alert("建立失敗");
+          return;
+        }
+
+        alert("已建立（已存 localStorage）");
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${travelData.title || "presentation"}.pptx`;
+        a.click();
+
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error(err);
+        alert("API錯誤");
+      }
+    });
+  </script>
 </body>
 </html>
