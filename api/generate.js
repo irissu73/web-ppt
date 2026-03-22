@@ -1,8 +1,8 @@
 import pptxgen from "pptxgenjs";
 import { buildTravelSlides } from "../builders/buildTravelSlides.js";
-import { buildCompareSlides } from "../builders/buildCompareSlides.js";
-import { buildLessonSlides } from "../builders/buildLessonSlides.js";
-import { buildProposalSlides } from "../builders/buildProposalSlides.js";
+//import { buildCompareSlides } from "../builders/buildCompareSlides.js";
+//import { buildLessonSlides } from "../builders/buildLessonSlides.js";
+//import { buildProposalSlides } from "../builders/buildProposalSlides.js";
 import { sendNotificationEmail } from "../lib/sendNotificationEmail.js";
 import { systemConfig } from "../config/systemConfig.js";
 
