@@ -76,7 +76,34 @@
       console.log("travelData:", travelData);
     });
     
+//寄信
+document.getElementById("testMailBtn").addEventListener("click", async () => {
+  try {
+    const email = emailInput.value;
 
+    if (!email) {
+      alert("請先填寫 email");
+      return;
+    }
+
+    const res = await fetch("/api/send-test-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ email })
+    });
+
+    const data = await res.json();
+
+    alert(data.message || data.error || "完成");
+  } catch (err) {
+    alert("寄信測試失敗");
+    console.error(err);
+  }
+});
+
+//寄信（止）
   </script>
 </body>
 </html>
