@@ -97,22 +97,29 @@
 
     // ===== 讀資料回填（編修模式） =====
     if (presentationId) {
-      const raw = localStorage.getItem(`presentation:${presentationId}`);
+  presentationInfo.textContent = `讀取中：${presentationId}`;
 
-      if (raw) {
-        const data = JSON.parse(raw);
+  try {
+    const res = await fetch(`/api/get-presentation?presentationId=${presentationId}`);
 
-        document.getElementById("titleInput").value = data.title || "";
-        emailInput.value = data.email || "";
-        expireInput.value = data.expiresAt || "";
-
-        presentationInfo.textContent = `編修模式：${presentationId}`;
-      } else {
-        presentationInfo.textContent = `找不到資料：${presentationId}`;
-      }
+    if (!res.ok) {
+      presentationInfo.textContent = `找不到資料：${presentationId}`;
     } else {
-      presentationInfo.textContent = "新建模式";
+      const data = await res.json();
+
+      document.getElementById("titleInput").value = data.title || "";
+      emailInput.value = data.email || "";
+      expireInput.value = data.expiresAt || "";
+
+      presentationInfo.textContent = `編修模式：${presentationId}`;
     }
+  } catch (err) {
+    console.error(err);
+    presentationInfo.textContent = "讀取資料失敗";
+  }
+} else {
+  presentationInfo.textContent = "新建模式";
+}}
 
     renderStorage();
 
