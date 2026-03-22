@@ -1,126 +1,29 @@
 import pptxgen from "pptxgenjs";
+import { buildTravelSlides } from "../builders/buildTravelSlides.js";
+import { buildCompareSlides } from "../builders/buildCompareSlides.js";
+import { buildLessonSlides } from "../builders/buildLessonSlides.js";
+import { buildProposalSlides } from "../builders/buildProposalSlides.js";
+import { sendNotificationEmail } from "../lib/sendNotificationEmail.js";
+import { systemConfig } from "../config/systemConfig.js";
 
-function buildMockSlides({ type, title }) {
-  if (type === "travel") {
-    return {
-      title,
-      slides: [
-        {
-          slideType: "cover",
-          title,
-          subtitle: "行程安排"
-        },
-        {
-          slideType: "timeline",
-          title: "Day 1 行程",
-          items: ["09:00 出發", "10:30 景點 A", "12:00 午餐"]
-        },
-        {
-          slideType: "bullet",
-          title: "行程提醒",
-          points: ["提早出門", "注意天氣", "保留休息時間"]
-        }
-      ]
-    };
+function buildSlidesByType(data) {
+  switch (data.type) {
+    case "travel":
+      return buildTravelSlides(data);
+    case "compare":
+      return buildCompareSlides(data);
+    case "lesson":
+      return buildLessonSlides(data);
+    case "proposal":
+      return buildProposalSlides(data);
+    default:
+      throw new Error("不支援的類型");
   }
-
-if (type === "compare") {
-  return {
-    title,
-    slides: [
-      {
-        slideType: "cover",
-        title,
-        subtitle: "比較分析"
-      },
-      {
-        slideType: "compare",
-        title: "兩者比較",
-        leftTitle: "方案 A",
-        rightTitle: "方案 B",
-        leftPoints: ["價格較高", "穩定性高", "適合重視品質"],
-        rightPoints: ["價格彈性大", "自由度高", "適合重視效率"]
-      },
-      {
-        slideType: "bullet",
-        title: "初步結論",
-        points: ["先看需求", "再看預算", "最後決定選擇"]
-      }
-    ]
-  };
-}
-
-  if (type === "lesson") {
-    return {
-      title,
-      slides: [
-        {
-          slideType: "cover",
-          title,
-          subtitle: "教學說明"
-        },
-        {
-          slideType: "bullet",
-          title: "今天要學什麼",
-          points: ["基本概念", "實際例子", "重點整理"]
-        },
-        {
-          slideType: "bullet",
-          title: "學習重點",
-          points: ["先理解概念", "再看應用", "最後做整理"]
-        }
-      ]
-    };
-  }
-
-  if (type === "proposal") {
-    return {
-      title,
-      slides: [
-        {
-          slideType: "cover",
-          title,
-          subtitle: "提案簡報"
-        },
-        {
-          slideType: "bullet",
-          title: "目前問題",
-          points: ["流程繁瑣", "溝通成本高", "產出速度慢"]
-        },
-        {
-          slideType: "bullet",
-          title: "提案方向",
-          points: ["導入 AI 協助", "標準化流程", "提升產出效率"]
-        }
-      ]
-    };
-  }
-
-  return {
-    title,
-    slides: [
-      {
-        slideType: "cover",
-        title,
-        subtitle: "未指定類型"
-      },
-      {
-        slideType: "bullet",
-        title: "重點整理",
-        points: ["第一點", "第二點", "第三點"]
-      }
-    ]
-  };
 }
 
 async function generatePptBuffer(slideJson) {
   const pptx = new pptxgen();
   pptx.layout = "LAYOUT_WIDE";
-  pptx.author = "OpenAI";
-  pptx.subject = slideJson.title;
-  pptx.title = slideJson.title;
-  pptx.company = "IRIS AI Lab";
-  pptx.lang = "zh-TW";
 
   for (const slide of slideJson.slides) {
     const s = pptx.addSlide();
@@ -143,80 +46,85 @@ async function generatePptBuffer(slideJson) {
         fontSize: 20, bold: true
       });
 
-      const lines = (slide.points || []).map((p) => ({
-        text: p,
-        options: { bullet: { indent: 14 } }
-      }));
-
-      s.addText(lines, {
+      const text = (slide.points || []).map(p => `• ${p}`).join("\n");
+      s.addText(text, {
         x: 1.0, y: 1.5, w: 10.5, h: 4.5,
-        fontSize: 18, breakLine: true
+        fontSize: 18
       });
       continue;
     }
 
     if (slide.slideType === "timeline") {
-  s.addText(slide.title || "", {
-    x: 0.8, y: 0.6, w: 11, h: 0.5,
-    fontSize: 20, bold: true
-  });
+      s.addText(slide.title || "", {
+        x: 0.8, y: 0.6, w: 11, h: 0.5,
+        fontSize: 20, bold: true
+      });
 
-  const text = (slide.items || [])
-    .map((item, i) => `${i + 1}. ${item}`)
-    .join("\n");
+      const text = (slide.items || [])
+        .map((item, i) => `${i + 1}. ${item}`)
+        .join("\n");
 
-  s.addText(text, {
-    x: 1.0, y: 1.5, w: 10.5, h: 4.5,
-    fontSize: 18,
-    breakLine: false,
-    valign: "top",
-    margin: 0.1
-  });
-  continue;
-}
+      s.addText(text, {
+        x: 1.0, y: 1.5, w: 10.5, h: 4.5,
+        fontSize: 18
+      });
+      continue;
+    }
 
-if (slide.slideType === "compare") {
-  s.addText(slide.title || "", {
-    x: 0.8, y: 0.6, w: 11, h: 0.5,
-    fontSize: 20, bold: true
-  });
+    if (slide.slideType === "compare") {
+      s.addText(slide.title || "", {
+        x: 0.8, y: 0.6, w: 11, h: 0.5,
+        fontSize: 20, bold: true
+      });
 
-  s.addText(slide.leftTitle || "左側", {
-    x: 0.8, y: 1.4, w: 5, h: 0.4,
-    fontSize: 18, bold: true
-  });
+      s.addText(slide.leftTitle || "", {
+        x: 0.8, y: 1.4, w: 5, h: 0.4,
+        fontSize: 18, bold: true
+      });
 
-  s.addText(slide.rightTitle || "右側", {
-    x: 6.7, y: 1.4, w: 5, h: 0.4,
-    fontSize: 18, bold: true
-  });
+      s.addText(slide.rightTitle || "", {
+        x: 6.7, y: 1.4, w: 5, h: 0.4,
+        fontSize: 18, bold: true
+      });
 
-  const leftText = (slide.leftPoints || []).map(p => `• ${p}`).join("\n");
-  const rightText = (slide.rightPoints || []).map(p => `• ${p}`).join("\n");
+      s.addText((slide.leftPoints || []).map(p => `• ${p}`).join("\n"), {
+        x: 0.8, y: 2.0, w: 5, h: 4,
+        fontSize: 16
+      });
 
-  s.addText(leftText, {
-    x: 0.8, y: 2.0, w: 5, h: 4,
-    fontSize: 16,
-    valign: "top",
-    margin: 0.1
-  });
+      s.addText((slide.rightPoints || []).map(p => `• ${p}`).join("\n"), {
+        x: 6.7, y: 2.0, w: 5, h: 4,
+        fontSize: 16
+      });
 
-  s.addText(rightText, {
-    x: 6.7, y: 2.0, w: 5, h: 4,
-    fontSize: 16,
-    valign: "top",
-    margin: 0.1
-  });
-
-  continue;
-}
-
-    s.addText("Unsupported slide type", {
-      x: 1, y: 1, w: 10, h: 1, fontSize: 18
-    });
+      continue;
+    }
   }
 
   return pptx.write({ outputType: "nodebuffer" });
+}
+
+function buildEditUrl(data) {
+  const baseUrl = process.env.APP_BASE_URL || "";
+  const id = data.id || crypto.randomUUID();
+
+  // 目前先用首頁或之後的 edit 頁 placeholder
+  return `${baseUrl}/?id=${id}`;
+}
+
+function validateExpireDate(expiresAt) {
+  if (!expiresAt) return false;
+
+  const today = new Date();
+  const expireDate = new Date(expiresAt);
+
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const expireOnly = new Date(expireDate.getFullYear(), expireDate.getMonth(), expireDate.getDate());
+
+  const diffMs = expireOnly - todayOnly;
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+  return diffDays >= 0 && diffDays <= systemConfig.maxExpireDays;
 }
 
 export default async function handler(req, res) {
@@ -225,14 +133,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { type, title, email, expiresAt } = req.body || {};
+    const data = req.body || {};
 
-    if (!type || !title || !email || !expiresAt) {
+    if (!data.type || !data.title || !data.expiresAt) {
       return res.status(400).json({ error: "缺少必要欄位" });
     }
 
-    const slideJson = buildMockSlides({ type, title });
+    if (systemConfig.requireEmail && !data.email) {
+      return res.status(400).json({ error: "Email 必填" });
+    }
+
+    if (!validateExpireDate(data.expiresAt)) {
+      return res.status(400).json({ error: "最後保留日超出允許範圍" });
+    }
+
+    const slideJson = buildSlidesByType(data);
     const buffer = await generatePptBuffer(slideJson);
+    const editUrl = buildEditUrl(data);
+
+    try {
+      await sendNotificationEmail({
+        status: "created",
+        email: data.email,
+        title: data.title,
+        type: data.type,
+        expiresAt: data.expiresAt,
+        editUrl
+      });
+    } catch (mailError) {
+      console.error("寄信失敗，但簡報已成功建立：", mailError);
+    }
 
     res.setHeader(
       "Content-Type",
@@ -240,7 +170,7 @@ export default async function handler(req, res) {
     );
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="${encodeURIComponent(title)}.pptx"`
+      `attachment; filename="${encodeURIComponent(data.title || "presentation")}.pptx"`
     );
 
     return res.send(buffer);
