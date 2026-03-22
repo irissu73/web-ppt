@@ -156,7 +156,8 @@ console.log("presentationId =", presentationId);
       `presentation:${travelData.presentationId}`,
       JSON.stringify(travelData)
     );
-
+console.log("已寫入 localStorage", travelData.presentationId);
+renderStorage();
     renderStorage();
 
     result.textContent = JSON.stringify(travelData, null, 2);
