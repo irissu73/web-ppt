@@ -5,6 +5,7 @@ import { buildLessonSlides } from "../builders/buildLessonSlides.js";
 import { buildProposalSlides } from "../builders/buildProposalSlides.js";
 import { sendNotificationEmail } from "../lib/sendNotificationEmail.js";
 import { systemConfig } from "../config/systemConfig.js";
+import { sendNotificationEmail } from "../lib/sendNotificationEmail.js";
 
 function buildSlidesByType(data) {
   switch (data.type) {
