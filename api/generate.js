@@ -179,3 +179,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "PPT 產生失敗" });
   }
 }
+
+await sendNotificationEmail({
+  status: "created",
+  email: data.email,
+  title: data.title,
+  type: data.type,
+  expiresAt: data.expiresAt,
+  editUrl
+});
