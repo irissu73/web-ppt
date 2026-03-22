@@ -48,10 +48,13 @@
   emailInput.required = systemConfig.requireEmail;
 
 
+  const presentationInfo = document.getElementById("presentationInfo");
+  
   const params = new URLSearchParams(window.location.search);
   const presentationId = params.get("presentationId");
-  const presentationInfo = document.getElementById("presentationInfo");
-
+  
+  console.log("presentationId =", presentationId);
+  
   if (presentationId) {
     presentationInfo.textContent = `目前簡報 ID：${presentationId}`;
   } else {
