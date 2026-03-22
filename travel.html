@@ -132,7 +132,11 @@
         type: "travel",
         title: document.getElementById("titleInput").value,
         email: emailInput.value,
-        expiresAt: selectedDate
+        expiresAt: selectedDate,
+        data: {
+          days: 1,
+          location: ""
+        }
       };
 
       // ===== 存 localStorage =====
