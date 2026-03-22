@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>行程安排</title>
+  <title>比較分析</title>
 </head>
 <body>
-  <h1>行程安排</h1>
+  <h1>比較分析</h1>
 
-  <form id="travelForm">
+  <form id="compareForm">
     <div>
       <label for="titleInput">簡報主題</label><br />
       <input type="text" id="titleInput" required />
@@ -30,10 +30,10 @@
 
     <br />
 
-    <button type="submit">建立行程資料</button>
+    <button type="submit">建立比較資料</button>
   </form>
 
-  <h3>目前產生的 travel data</h3>
+  <h3>目前產生的 compare data</h3>
   <pre id="result"></pre>
 
   <script type="module">
@@ -63,7 +63,7 @@
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
-      const travelData = {
+      const compareData = {
         id: crypto.randomUUID(),
         type: "travel",
         title: document.getElementById("titleInput").value,
