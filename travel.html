@@ -144,21 +144,22 @@ console.log("presentationId =", presentationId);
       return;
     }
 
-    const travelData = {
-      id: crypto.randomUUID(),
-      type: "travel",
-      title: document.getElementById("titleInput").value,
-      email: emailInput.value,
-      expiresAt: selectedDate
-    };
-    
-    localStorage.setItem(
-      `presentation:${travelData.presentationId}`,
-      JSON.stringify(travelData)
-    );
+const travelData = {
+  presentationId: crypto.randomUUID(),
+  type: "travel",
+  title: document.getElementById("titleInput").value,
+  email: emailInput.value,
+  expiresAt: selectedDate
+};
+
+localStorage.setItem(
+  `presentation:${travelData.presentationId}`,
+  JSON.stringify(travelData)
+);
+
 console.log("已寫入 localStorage", travelData.presentationId);
 renderStorage();
-    renderStorage();
+    
 
     result.textContent = JSON.stringify(travelData, null, 2);
     console.log("travelData:", travelData);
