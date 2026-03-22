@@ -106,10 +106,9 @@ async function generatePptBuffer(slideJson) {
 
 function buildEditUrl(data) {
   const baseUrl = process.env.APP_BASE_URL || "";
-  const id = data.id || crypto.randomUUID();
+  const presentationId = data.id || String(Date.now());
 
-  // 目前先用首頁或之後的 edit 頁 placeholder
-  return `${baseUrl}/?id=${id}`;
+  return `${baseUrl}/${data.type}.html?id=${presentationId}`;
 }
 
 function validateExpireDate(expiresAt) {
