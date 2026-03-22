@@ -53,6 +53,26 @@
   const params = new URLSearchParams(window.location.search);
   const presentationId = params.get("presentationId");
   
+if (presentationId) {
+  const raw = localStorage.getItem(`presentation:${presentationId}`);
+
+  if (raw) {
+      const savedData = JSON.parse(raw);
+  
+      // 👇 回填表單
+      document.getElementById("titleInput").value = savedData.title || "";
+      emailInput.value = savedData.email || "";
+      expireInput.value = savedData.expiresAt || "";
+  
+      presentationInfo.textContent = `編修模式：${presentationId}`;
+    } else {
+      presentationInfo.textContent = `找不到資料：${presentationId}`;
+    }
+  } else {
+    presentationInfo.textContent = "新建模式";
+  }
+  
+  
   console.log("presentationId =", presentationId);
   
   if (presentationId) {
