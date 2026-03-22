@@ -60,7 +60,11 @@ function renderStorage() {
     all[key] = value;
   }
 
-  debugStorage.textContent = JSON.stringify(all, null, 2);
+  if (Object.keys(all).length === 0) {
+    debugStorage.textContent = "目前沒有任何 localStorage 資料";
+  } else {
+    debugStorage.textContent = JSON.stringify(all, null, 2);
+  }
 }
 
 
