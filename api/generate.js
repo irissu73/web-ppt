@@ -106,9 +106,9 @@ async function generatePptBuffer(slideJson) {
 
 function buildEditUrl(data) {
   const baseUrl = process.env.APP_BASE_URL || "";
-  const presentationId = data.id || String(Date.now());
+  const presentationId = data.presentationId;
 
-  return `${baseUrl}/${data.type}.html?id=${presentationId}`;
+  return `${baseUrl}/${data.type}.html?presentationId=${presentationId}`;
 }
 
 function validateExpireDate(expiresAt) {
