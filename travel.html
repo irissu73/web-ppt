@@ -117,69 +117,83 @@
     renderStorage();
 
     // ===== submit =====
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-      const selectedDate = expireInput.value;
+  const selectedDate = expireInput.value;
 
-      if (!selectedDate) {
-        alert("請選擇日期");
-        return;
-      }
+  if (!selectedDate) {
+    alert("請選擇日期");
+    return;
+  }
 
-      const travelData = {
-        presentationId: presentationId || crypto.randomUUID(),
-        type: "travel",
-        title: document.getElementById("titleInput").value,
-        email: emailInput.value,
-        expiresAt: selectedDate,
-        data: {
-          days: 1,
-          location: ""
-        }
-      };
+  const travelData = {
+    presentationId: presentationId || crypto.randomUUID(),
+    type: "travel",
+    title: document.getElementById("titleInput").value,
+    email: emailInput.value,
+    expiresAt: selectedDate,
+    data: {
+      days: 1,
+      location: ""
+    }
+  };
 
-      // ===== 存 localStorage =====
-      localStorage.setItem(
-        `presentation:${travelData.presentationId}`,
-        JSON.stringify(travelData)
-      );
+  // =====（可保留）存 localStorage =====
+  localStorage.setItem(
+    `presentation:${travelData.presentationId}`,
+    JSON.stringify(travelData)
+  );
 
-      console.log("已存", travelData);
+  result.textContent = JSON.stringify(travelData, null, 2);
+  renderStorage();
 
-      result.textContent = JSON.stringify(travelData, null, 2);
-      renderStorage();
+  // ===== 👉 這裡：寫進 Supabase（新加的）=====
+  const saveRes = await fetch("/api/save-presentation", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(travelData)
+  });
 
-      try {
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(travelData)
-        });
+  if (!saveRes.ok) {
+    const err = await saveRes.json().catch(() => ({}));
+    alert(err.error || "儲存失敗");
+    return;
+  }
 
-        if (!res.ok) {
-          alert("建立失敗");
-          return;
-        }
-
-        alert("已建立（已存 localStorage）");
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${travelData.title || "presentation"}.pptx`;
-        a.click();
-
-        window.URL.revokeObjectURL(url);
-      } catch (err) {
-        console.error(err);
-        alert("API錯誤");
-      }
+  // ===== 👉 原本的 generate（不要動）=====
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(travelData)
     });
+
+    if (!res.ok) {
+      alert("建立失敗");
+      return;
+    }
+
+    alert("已建立（已存 Supabase）");
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${travelData.title || "presentation"}.pptx`;
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error(err);
+    alert("API錯誤");
+  }
+});
   </script>
 </body>
 </html>
