@@ -128,12 +128,15 @@ function validateExpireDate(expiresAt) {
 }
 
 export default async function handler(req, res) {
+  console.log("🔥 進入 generate API"); //iris debug
+  
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
 
   try {
     const data = req.body || {};
+    console.log("📦 收到資料 data =", data); //iris debug
 
     if (!data.type || !data.title || !data.expiresAt) {
       return res.status(400).json({ error: "缺少必要欄位" });
@@ -150,6 +153,17 @@ export default async function handler(req, res) {
     const slideJson = buildSlidesByType(data);
     const buffer = await generatePptBuffer(slideJson);
     const editUrl = buildEditUrl(data);
+
+//iris debug
+console.log("📧 準備寄通知信", {
+  email: data.email,
+  title: data.title,
+  type: data.type,
+  expiresAt: data.expiresAt,
+  editUrl
+})
+//end
+
 
     try {
       await sendNotificationEmail({
