@@ -47,6 +47,15 @@
 
   emailInput.required = systemConfig.requireEmail;
 
+  const presentationInfo = document.getElementById("presentationInfo");
+
+  if (presentationId) {
+    presentationInfo.textContent = `目前簡報 ID：${presentationId}`;
+  } else {
+    presentationInfo.textContent = "目前為新建簡報";
+  }
+
+
   function formatDateLocal(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
