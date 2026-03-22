@@ -7,7 +7,7 @@
 </head>
 <body>
   <h1>行程安排</h1>
-
+  <p id="presentationInfo"></p>
   <form id="travelForm">
     <div>
       <label for="titleInput">簡報主題</label><br />
@@ -63,6 +63,11 @@
 
   expireInput.min = minDateStr;
   expireInput.max = maxDateStr;
+
+  const params = new URLSearchParams(window.location.search);
+  const presentationId = params.get("presentationId");
+
+console.log("presentationId =", presentationId);
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
