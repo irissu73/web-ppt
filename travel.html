@@ -42,165 +42,158 @@
   <h3>localStorage內容</h3>
   <pre id="debugStorage"></pre>
 
-  <script type="module">
-    import { systemConfig } from "./config/systemConfig.js";
+<script type="module">
+  import { systemConfig } from "./config/systemConfig.js";
 
-    const form = document.getElementById("travelForm");
-    const emailInput = document.getElementById("email");
-    const expireInput = document.getElementById("expire");
-    const result = document.getElementById("result");
-    const presentationInfo = document.getElementById("presentationInfo");
-    const debugStorage = document.getElementById("debugStorage");
+  const form = document.getElementById("travelForm");
+  const emailInput = document.getElementById("email");
+  const expireInput = document.getElementById("expire");
+  const result = document.getElementById("result");
+  const presentationInfo = document.getElementById("presentationInfo");
+  const debugStorage = document.getElementById("debugStorage");
 
-    emailInput.required = systemConfig.requireEmail;
+  emailInput.required = systemConfig.requireEmail;
 
-    // ===== 日期限制 =====
-    function formatDateLocal(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
-    }
-
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
-
-    const minDateStr = formatDateLocal(today);
-    const maxDateStr = formatDateLocal(maxDate);
-
-    expireInput.min = minDateStr;
-    expireInput.max = maxDateStr;
-
-    // ===== 讀網址 presentationId =====
-    const params = new URLSearchParams(window.location.search);
-    const presentationId = params.get("presentationId");
-
-    console.log("presentationId =", presentationId);
-
-    // ===== 顯示 localStorage =====
-    function renderStorage() {
-      const all = {};
-
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        const value = localStorage.getItem(key);
-        all[key] = value;
-      }
-
-      if (Object.keys(all).length === 0) {
-        debugStorage.textContent = "目前沒有任何資料";
-      } else {
-        debugStorage.textContent = JSON.stringify(all, null, 2);
-      }
-    }
-
-    // ===== 讀資料回填（編修模式） =====
-    if (presentationId) {
-  presentationInfo.textContent = `讀取中：${presentationId}`;
-
-  try {
-    const res = await fetch(`/api/get-presentation?presentationId=${presentationId}`);
-
-    if (!res.ok) {
-      presentationInfo.textContent = `找不到資料：${presentationId}`;
-    } else {
-      const data = await res.json();
-
-      document.getElementById("titleInput").value = data.title || "";
-      emailInput.value = data.email || "";
-      expireInput.value = data.expiresAt || "";
-
-      presentationInfo.textContent = `編修模式：${presentationId}`;
-    }
-  } catch (err) {
-    console.error(err);
-    presentationInfo.textContent = "讀取資料失敗";
+  function formatDateLocal(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
-} else {
-  presentationInfo.textContent = "新建模式";
-}}
+
+  function renderStorage() {
+    const all = {};
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      const value = localStorage.getItem(key);
+      all[key] = value;
+    }
+
+    if (Object.keys(all).length === 0) {
+      debugStorage.textContent = "目前沒有任何資料";
+    } else {
+      debugStorage.textContent = JSON.stringify(all, null, 2);
+    }
+  }
+
+  const today = new Date();
+  const maxDate = new Date();
+  maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
+
+  const minDateStr = formatDateLocal(today);
+  const maxDateStr = formatDateLocal(maxDate);
+
+  expireInput.min = minDateStr;
+  expireInput.max = maxDateStr;
+
+  const params = new URLSearchParams(window.location.search);
+  const presentationId = params.get("presentationId");
+
+  async function initPage() {
+    if (presentationId) {
+      presentationInfo.textContent = `讀取中：${presentationId}`;
+
+      try {
+        const res = await fetch(`/api/get-presentation?presentationId=${presentationId}`);
+
+        if (!res.ok) {
+          presentationInfo.textContent = `找不到資料：${presentationId}`;
+        } else {
+          const data = await res.json();
+
+          document.getElementById("titleInput").value = data.title || "";
+          emailInput.value = data.email || "";
+          expireInput.value = data.expiresAt || "";
+
+          presentationInfo.textContent = `編修模式：${presentationId}`;
+        }
+      } catch (err) {
+        console.error("initPage error:", err);
+        presentationInfo.textContent = "讀取資料失敗";
+      }
+    } else {
+      presentationInfo.textContent = "新建模式";
+    }
 
     renderStorage();
-
-    // ===== submit =====
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const selectedDate = expireInput.value;
-
-  if (!selectedDate) {
-    alert("請選擇日期");
-    return;
   }
 
-  const travelData = {
-    presentationId: presentationId || crypto.randomUUID(),
-    type: "travel",
-    title: document.getElementById("titleInput").value,
-    email: emailInput.value,
-    expiresAt: selectedDate,
-    data: {
-      days: 1,
-      location: ""
-    }
-  };
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  // =====（可保留）存 localStorage =====
-  localStorage.setItem(
-    `presentation:${travelData.presentationId}`,
-    JSON.stringify(travelData)
-  );
+    const selectedDate = expireInput.value;
 
-  result.textContent = JSON.stringify(travelData, null, 2);
-  renderStorage();
-
-  // ===== 👉 這裡：寫進 Supabase（新加的）=====
-  const saveRes = await fetch("/api/save-presentation", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(travelData)
-  });
-
-  if (!saveRes.ok) {
-    const err = await saveRes.json().catch(() => ({}));
-    alert(err.error || "儲存失敗");
-    return;
-  }
-
-  // ===== 👉 原本的 generate（不要動）=====
-  try {
-    const res = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(travelData)
-    });
-
-    if (!res.ok) {
-      alert("建立失敗");
+    if (!selectedDate) {
+      alert("請選擇日期");
       return;
     }
 
-    alert("已建立（已存 Supabase）");
+    const travelData = {
+      presentationId: presentationId || crypto.randomUUID(),
+      type: "travel",
+      title: document.getElementById("titleInput").value,
+      email: emailInput.value,
+      expiresAt: selectedDate,
+      data: {
+        days: 1,
+        location: ""
+      }
+    };
 
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
+    localStorage.setItem(
+      `presentation:${travelData.presentationId}`,
+      JSON.stringify(travelData)
+    );
 
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${travelData.title || "presentation"}.pptx`;
-    a.click();
+    result.textContent = JSON.stringify(travelData, null, 2);
+    renderStorage();
 
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(err);
-    alert("API錯誤");
-  }
-});
-  </script>
+    try {
+      const saveRes = await fetch("/api/save-presentation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(travelData)
+      });
+
+      if (!saveRes.ok) {
+        const saveErr = await saveRes.json().catch(() => ({}));
+        throw new Error(saveErr.error || "儲存失敗");
+      }
+
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(travelData)
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "建立失敗");
+      }
+
+      alert("已建立（已存 Supabase）");
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${travelData.title || "presentation"}.pptx`;
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("submit error:", err);
+      alert(err.message || "建立失敗");
+    }
+  });
+
+  initPage();
+</script>
 </body>
 </html>
