@@ -48,6 +48,22 @@
   const expireInput = document.getElementById("expire");
   const result = document.getElementById("result");
 
+const debugStorage = document.getElementById("debugStorage");
+
+// 把 localStorage 全部印出來
+function renderStorage() {
+  const all = {};
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    const value = localStorage.getItem(key);
+    all[key] = value;
+  }
+
+  debugStorage.textContent = JSON.stringify(all, null, 2);
+}
+
+
   emailInput.required = systemConfig.requireEmail;
 
 
