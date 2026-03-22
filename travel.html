@@ -47,6 +47,9 @@
 
   emailInput.required = systemConfig.requireEmail;
 
+
+  const params = new URLSearchParams(window.location.search);
+  const presentationId = params.get("presentationId");
   const presentationInfo = document.getElementById("presentationInfo");
 
   if (presentationId) {
