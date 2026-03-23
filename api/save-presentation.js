@@ -12,7 +12,6 @@ export default async function handler(req, res) {
 
   try {
     const presentation = req.body || {};
-    console.log("input =", presentation);
 
     if (!presentation.presentationId) {
       return res.status(400).json({ error: "缺少 presentationId" });
@@ -20,7 +19,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("presentations")
-      .insert({
+      .upsert({
         presentationId: presentation.presentationId,
         type: presentation.type,
         title: presentation.title,
@@ -31,21 +30,19 @@ export default async function handler(req, res) {
       .select();
 
     if (error) {
-      console.error("supabase error =", error);
+      console.error("supabase upsert error =", error);
       return res.status(500).json({
         error: "儲存失敗",
         detail: error.message
       });
     }
 
-    console.log("saved data =", data);
-
     return res.status(200).json({
-      message: "saved",
+      message: "儲存成功",
       saved: data
     });
   } catch (err) {
-    console.error("catch error =", err);
+    console.error("save-presentation error =", err);
     return res.status(500).json({
       error: "儲存失敗",
       detail: err?.message || String(err)
