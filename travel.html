@@ -150,7 +150,7 @@
     renderStorage();
 
     try {
-      const saveRes = await fetch("/api/save-presentation", {
+const saveRes = await fetch("/api/save-presentation", {
   method: "POST",
   headers: {
     "Content-Type": "application/json"
@@ -159,11 +159,12 @@
 });
 
 const saveJson = await saveRes.json().catch(() => ({}));
-console.log("saveRes =", saveJson);
+console.log("saveJson =", saveJson);
 
 if (!saveRes.ok) {
   alert(saveJson.detail || saveJson.error || "儲存失敗");
   return;
+}
 }
 
       const res = await fetch("/api/generate", {
