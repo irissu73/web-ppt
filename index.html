@@ -46,13 +46,7 @@
       padding: 20px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
       border: 1px solid #eee;
-    }
-
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     }
 
     .card-title {
@@ -74,39 +68,31 @@
     <p class="desc">你想做哪一種簡報？</p>
 
     <div class="grid">
-      <div class="card" onclick="go('travel-create.html')">
+      <div class="card" onclick="go('travel')">
         <div class="card-title">行程安排</div>
-        <div class="card-text">
-          用於旅遊、出遊、活動規劃等情境，建立可持續編修的行程型簡報。
-        </div>
+        <div class="card-text">旅遊、出遊、活動規劃等情境。</div>
       </div>
 
-      <div class="card" onclick="go('compare-create.html')">
+      <div class="card" onclick="go('compare')">
         <div class="card-title">比較分析</div>
-        <div class="card-text">
-          用於方案、產品、服務或選項比較，整理重點差異與結論。
-        </div>
+        <div class="card-text">整理方案、產品、服務的差異與結論。</div>
       </div>
 
-      <div class="card" onclick="go('lesson-create.html')">
+      <div class="card" onclick="go('lesson')">
         <div class="card-title">教學說明</div>
-        <div class="card-text">
-          用於教學內容、操作說明、流程教學，整理步驟與重點。
-        </div>
+        <div class="card-text">整理教學內容、步驟與重點。</div>
       </div>
 
-      <div class="card" onclick="go('proposal-create.html')">
+      <div class="card" onclick="go('proposal')">
         <div class="card-title">提案簡報</div>
-        <div class="card-text">
-          用於企劃、提案、構想說明，整理問題、方向與效益。
-        </div>
+        <div class="card-text">整理問題、方向與效益。</div>
       </div>
     </div>
   </div>
 
   <script>
-    function go(path) {
-      window.location.href = path;
+    function go(type) {
+      window.location.href = `create.html?type=${type}`;
     }
   </script>
 </body>
