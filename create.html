@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>建立簡報</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f7f7fb;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    .desc {
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      margin-top: 24px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 12px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="pageTitle">建立簡報</h1>
+    <p class="desc" id="pageDesc"></p>
+
+    <form id="createForm">
+      <div class="section-title">共用資料</div>
+
+      <div>
+        <label for="titleInput">簡報主題</label><br />
+        <input type="text" id="titleInput" required />
+      </div>
+
+      <br />
+
+      <div>
+        <label for="email">Email</label><br />
+        <input type="email" id="email" />
+      </div>
+
+      <br />
+
+      <div>
+        <label for="expire">最後保留日</label><br />
+        <input type="date" id="expire" required />
+      </div>
+
+      <div class="section-title" id="typeSectionTitle">類型資料</div>
+      <div id="typeFields"></div>
+
+      <br />
+      <button type="submit" id="submitBtn">建立簡報</button>
+    </form>
+
+    <h3>目前送出的資料</h3>
+    <pre id="result"></pre>
+  </div>
+
+  <script type="module">
+    import { systemConfig } from "./config/systemConfig.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get("type");
+
+    const pageTitle = document.getElementById("pageTitle");
+    const pageDesc = document.getElementById("pageDesc");
+    const typeFields = document.getElementById("typeFields");
+
+    const form = document.getElementById("createForm");
+    const titleInput = document.getElementById("titleInput");
+    const emailInput = document.getElementById("email");
+    const expireInput = document.getElementById("expire");
+    const result = document.getElementById("result");
+
+    const typeMetaMap = {
+      travel: {
+        title: "建立行程安排簡報",
+        desc: "先建立基本資料，再進入行程編修頁。",
+        editPage: "travel.html"
+      },
+      compare: {
+        title: "建立比較分析簡報",
+        desc: "先建立基本資料，再進入比較分析編修頁。",
+        editPage: "compare.html"
+      },
+      lesson: {
+        title: "建立教學說明簡報",
+        desc: "先建立基本資料，再進入教學說明編修頁。",
+        editPage: "lesson.html"
+      },
+      proposal: {
+        title: "建立提案簡報",
+        desc: "先建立基本資料，再進入提案編修頁。",
+        editPage: "proposal.html"
+      }
+    };
+
+    const meta = typeMetaMap[type];
+
+    if (!meta) {
+      pageTitle.textContent = "找不到簡報類型";
+      pageDesc.textContent = "請回首頁重新選擇。";
+      form.style.display = "none";
+      throw new Error("invalid type");
+    }
+
+    pageTitle.textContent = meta.title;
+    pageDesc.textContent = meta.desc;
+
+    emailInput.required = systemConfig.requireEmail;
+
+    function formatDateLocal(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
+
+    const minDateStr = formatDateLocal(today);
+    const maxDateStr = formatDateLocal(maxDate);
+
+    expireInput.min = minDateStr;
+    expireInput.max = maxDateStr;
+
+    function renderTypeFields(type) {
+      if (type === "travel") {
+        typeFields.innerHTML = `
+          <div>
+            <label for="days">天數</label><br />
+            <input type="number" id="days" min="1" max="10" value="1" />
+          </div>
+          <br />
+          <div>
+            <label for="location">地點</label><br />
+            <input type="text" id="location" placeholder="例如：宜蘭" />
+          </div>
+        `;
+        return;
+      }
+
+      if (type === "compare") {
+        typeFields.innerHTML = `
+          <div>
+            <label for="leftTitle">左側主題</label><br />
+            <input type="text" id="leftTitle" placeholder="例如：方案 A" />
+          </div>
+          <br />
+          <div>
+            <label for="rightTitle">右側主題</label><br />
+            <input type="text" id="rightTitle" placeholder="例如：方案 B" />
+          </div>
+        `;
+        return;
+      }
+
+      if (type === "lesson") {
+        typeFields.innerHTML = `
+          <div>
+            <label for="lessonTopic">教學主題</label><br />
+            <input type="text" id="lessonTopic" placeholder="例如：PowerPoint 基礎操作" />
+          </div>
+          <br />
+          <div>
+            <label for="lessonAudience">對象</label><br />
+            <input type="text" id="lessonAudience" placeholder="例如：初學者" />
+          </div>
+        `;
+        return;
+      }
+
+      if (type === "proposal") {
+        typeFields.innerHTML = `
+          <div>
+            <label for="proposalTarget">提案對象</label><br />
+            <input type="text" id="proposalTarget" placeholder="例如：主管 / 客戶" />
+          </div>
+          <br />
+          <div>
+            <label for="proposalGoal">提案目的</label><br />
+            <input type="text" id="proposalGoal" placeholder="例如：爭取預算" />
+          </div>
+        `;
+      }
+    }
+
+    renderTypeFields(type);
+
+    function buildTypeData(type) {
+      if (type === "travel") {
+        return {
+          days: Number(document.getElementById("days")?.value || 1),
+          location: document.getElementById("location")?.value || ""
+        };
+      }
+
+      if (type === "compare") {
+        return {
+          leftTitle: document.getElementById("leftTitle")?.value || "",
+          rightTitle: document.getElementById("rightTitle")?.value || ""
+        };
+      }
+
+      if (type === "lesson") {
+        return {
+          lessonTopic: document.getElementById("lessonTopic")?.value || "",
+          lessonAudience: document.getElementById("lessonAudience")?.value || ""
+        };
+      }
+
+      if (type === "proposal") {
+        return {
+          proposalTarget: document.getElementById("proposalTarget")?.value || "",
+          proposalGoal: document.getElementById("proposalGoal")?.value || ""
+        };
+      }
+
+      return {};
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = titleInput.value.trim();
+      const email = emailInput.value.trim();
+      const expiresAt = expireInput.value;
+
+      if (!title) {
+        alert("請輸入簡報主題");
+        return;
+      }
+
+      if (systemConfig.requireEmail && !email) {
+        alert("請填寫 Email");
+        return;
+      }
+
+      if (!expiresAt) {
+        alert("請選擇最後保留日");
+        return;
+      }
+
+      if (expiresAt < minDateStr || expiresAt > maxDateStr) {
+        alert(`最後保留日需介於 ${minDateStr} ～ ${maxDateStr}`);
+        return;
+      }
+
+      const presentationId = crypto.randomUUID();
+
+      const payload = {
+        presentationId,
+        type,
+        title,
+        email,
+        expiresAt,
+        data: buildTypeData(type)
+      };
+
+      result.textContent = JSON.stringify(payload, null, 2);
+
+      try {
+        const saveRes = await fetch("/api/save-presentation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const saveJson = await saveRes.json().catch(() => ({}));
+
+        if (!saveRes.ok) {
+          alert(saveJson.detail || saveJson.error || "儲存失敗");
+          return;
+        }
+
+        const generateRes = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!generateRes.ok) {
+          const errJson = await generateRes.json().catch(() => ({}));
+          alert(errJson.error || "簡報建立失敗");
+          return;
+        }
+
+        const blob = await generateRes.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${title || "presentation"}.pptx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+
+        window.location.href = `${meta.editPage}?presentationId=${presentationId}`;
+      } catch (err) {
+        console.error(err);
+        alert("發生錯誤，請稍後再試");
+      }
+    });
+  </script>
+</body>
+</html>
