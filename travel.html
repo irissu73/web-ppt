@@ -159,7 +159,7 @@
 });
 
 const saveJson = await saveRes.json().catch(() => ({}));
-console.log("saveJson =", saveJson);
+console.log("saveRes =", saveJson);
 
 if (!saveRes.ok) {
   alert(saveJson.detail || saveJson.error || "儲存失敗");
