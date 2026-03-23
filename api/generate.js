@@ -1,10 +1,76 @@
 import pptxgen from "pptxgenjs";
 import { buildTravelSlides } from "../builders/buildTravelSlides.js";
-//import { buildCompareSlides } from "../builders/buildCompareSlides.js";
-//import { buildLessonSlides } from "../builders/buildLessonSlides.js";
-//import { buildProposalSlides } from "../builders/buildProposalSlides.js";
 import { sendNotificationEmail } from "../lib/sendNotificationEmail.js";
 import { systemConfig } from "../config/systemConfig.js";
+
+function buildCompareSlides(data) {
+  return {
+    title: data.title,
+    slides: [
+      {
+        slideType: "cover",
+        title: data.title,
+        subtitle: "比較分析"
+      },
+      {
+        slideType: "compare",
+        title: "主要比較",
+        leftTitle: data.data?.leftTitle || "左側",
+        rightTitle: data.data?.rightTitle || "右側",
+        leftPoints: ["重點 1", "重點 2"],
+        rightPoints: ["重點 1", "重點 2"]
+      },
+      {
+        slideType: "bullet",
+        title: "結論",
+        points: ["整理差異", "補充說明"]
+      }
+    ]
+  };
+}
+
+function buildLessonSlides(data) {
+  return {
+    title: data.title,
+    slides: [
+      {
+        slideType: "cover",
+        title: data.title,
+        subtitle: "教學說明"
+      },
+      {
+        slideType: "bullet",
+        title: data.data?.lessonTopic || "教學主題",
+        points: [
+          `對象：${data.data?.lessonAudience || "未填寫"}`,
+          "整理重點",
+          "進入說明"
+        ]
+      }
+    ]
+  };
+}
+
+function buildProposalSlides(data) {
+  return {
+    title: data.title,
+    slides: [
+      {
+        slideType: "cover",
+        title: data.title,
+        subtitle: "提案簡報"
+      },
+      {
+        slideType: "bullet",
+        title: "提案資訊",
+        points: [
+          `提案對象：${data.data?.proposalTarget || "未填寫"}`,
+          `提案目的：${data.data?.proposalGoal || "未填寫"}`
+        ]
+      }
+    ]
+  };
+}
 
 function buildSlidesByType(data) {
   switch (data.type) {
@@ -24,6 +90,11 @@ function buildSlidesByType(data) {
 async function generatePptBuffer(slideJson) {
   const pptx = new pptxgen();
   pptx.layout = "LAYOUT_WIDE";
+  pptx.author = "IRIS AI PPT";
+  pptx.company = "IRIS AI PPT";
+  pptx.subject = slideJson.title;
+  pptx.title = slideJson.title;
+  pptx.lang = "zh-TW";
 
   for (const slide of slideJson.slides) {
     const s = pptx.addSlide();
@@ -33,10 +104,12 @@ async function generatePptBuffer(slideJson) {
         x: 0.8, y: 1.2, w: 11, h: 0.8,
         fontSize: 24, bold: true
       });
+
       s.addText(slide.subtitle || "", {
         x: 0.8, y: 2.2, w: 11, h: 0.5,
         fontSize: 14
       });
+
       continue;
     }
 
@@ -46,11 +119,13 @@ async function generatePptBuffer(slideJson) {
         fontSize: 20, bold: true
       });
 
-      const text = (slide.points || []).map(p => `• ${p}`).join("\n");
+      const text = (slide.points || []).map((p) => `• ${p}`).join("\n");
+
       s.addText(text, {
         x: 1.0, y: 1.5, w: 10.5, h: 4.5,
         fontSize: 18
       });
+
       continue;
     }
 
@@ -68,6 +143,7 @@ async function generatePptBuffer(slideJson) {
         x: 1.0, y: 1.5, w: 10.5, h: 4.5,
         fontSize: 18
       });
+
       continue;
     }
 
@@ -99,6 +175,10 @@ async function generatePptBuffer(slideJson) {
 
       continue;
     }
+
+    s.addText("Unsupported slide type", {
+      x: 1, y: 1, w: 10, h: 1, fontSize: 18
+    });
   }
 
   return pptx.write({ outputType: "nodebuffer" });
@@ -127,17 +207,14 @@ function validateExpireDate(expiresAt) {
 }
 
 export default async function handler(req, res) {
-  console.log("🔥 進入 generate API"); //iris debug
-  
   if (req.method !== "POST") {
     return res.status(405).send("Method Not Allowed");
   }
 
   try {
     const data = req.body || {};
-    console.log("📦 收到資料 data =", data); //iris debug
 
-    if (!data.type || !data.title || !data.expiresAt) {
+    if (!data.presentationId || !data.type || !data.title || !data.expiresAt) {
       return res.status(400).json({ error: "缺少必要欄位" });
     }
 
@@ -152,17 +229,6 @@ export default async function handler(req, res) {
     const slideJson = buildSlidesByType(data);
     const buffer = await generatePptBuffer(slideJson);
     const editUrl = buildEditUrl(data);
-
-//iris debug
-console.log("📧 準備寄通知信", {
-  email: data.email,
-  title: data.title,
-  type: data.type,
-  expiresAt: data.expiresAt,
-  editUrl
-})
-//end
-
 
     try {
       await sendNotificationEmail({
@@ -189,6 +255,8 @@ console.log("📧 準備寄通知信", {
     return res.send(buffer);
   } catch (error) {
     console.error("generate error:", error);
-    return res.status(500).json({ error: "PPT 產生失敗" });
+    return res.status(500).json({
+      error: error?.message || "PPT 產生失敗"
+    });
   }
 }
