@@ -3,21 +3,233 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI幫你做簡報</title>
+  <title>行程安排</title>
 </head>
 <body>
-  <h1>AI幫你做簡報</h1>
-  <p>你想做哪一種簡報？</p>
+  <h1>行程安排</h1>
 
-  <button onclick="go('travel')">行程安排</button>
-  <button onclick="go('compare')">比較分析</button>
-  <button onclick="go('lesson')">教學說明</button>
-  <button onclick="go('proposal')">提案簡報</button>
+  <p id="presentationInfo"></p>
 
-  <script>
-    function go(type) {
-      window.location.href = `${type}.html`;
+  <form id="travelForm">
+    <div>
+      <label for="titleInput">簡報主題</label><br />
+      <input type="text" id="titleInput" required />
+    </div>
+
+    <br />
+
+    <div>
+      <label for="email">Email</label><br />
+      <input type="email" id="email" />
+    </div>
+
+    <br />
+
+    <div>
+      <label for="expire">最後保留日</label><br />
+      <input type="date" id="expire" required />
+    </div>
+
+    <br />
+
+    <button type="submit" id="submitBtn">建立行程資料</button>
+  </form>
+
+  <h3>目前產生的 travel data</h3>
+  <pre id="result"></pre>
+
+  <h3>localStorage內容</h3>
+  <pre id="debugStorage"></pre>
+
+  <script type="module">
+    import { systemConfig } from "./config/systemConfig.js";
+
+    const form = document.getElementById("travelForm");
+    const titleInput = document.getElementById("titleInput");
+    const emailInput = document.getElementById("email");
+    const expireInput = document.getElementById("expire");
+    const submitBtn = document.getElementById("submitBtn");
+    const result = document.getElementById("result");
+    const presentationInfo = document.getElementById("presentationInfo");
+    const debugStorage = document.getElementById("debugStorage");
+
+    emailInput.required = systemConfig.requireEmail;
+
+    function formatDateLocal(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
     }
+
+    function renderStorage() {
+      const all = {};
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        all[key] = value;
+      }
+
+      if (Object.keys(all).length === 0) {
+        debugStorage.textContent = "目前沒有任何資料";
+      } else {
+        debugStorage.textContent = JSON.stringify(all, null, 2);
+      }
+    }
+
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
+
+    const minDateStr = formatDateLocal(today);
+    const maxDateStr = formatDateLocal(maxDate);
+
+    expireInput.min = minDateStr;
+    expireInput.max = maxDateStr;
+
+    const params = new URLSearchParams(window.location.search);
+    const presentationId = params.get("presentationId");
+    const isEditMode = !!presentationId;
+
+    async function loadPresentation() {
+      if (!isEditMode) {
+        presentationInfo.textContent = "新建模式";
+        submitBtn.textContent = "建立行程資料";
+        renderStorage();
+        return;
+      }
+
+      presentationInfo.textContent = `讀取中：${presentationId}`;
+      submitBtn.textContent = "更新行程資料";
+
+      try {
+        const res = await fetch(`/api/get-presentation?presentationId=${encodeURIComponent(presentationId)}`);
+
+        if (!res.ok) {
+          presentationInfo.textContent = `找不到資料：${presentationId}`;
+          renderStorage();
+          return;
+        }
+
+        const data = await res.json();
+
+        titleInput.value = data.title || "";
+        emailInput.value = data.email || "";
+        expireInput.value = data.expiresAt || "";
+
+        presentationInfo.textContent = `編修模式：${presentationId}`;
+      } catch (err) {
+        console.error("讀取資料失敗", err);
+        presentationInfo.textContent = "讀取資料失敗";
+      }
+
+      renderStorage();
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const selectedDate = expireInput.value;
+
+      if (!titleInput.value.trim()) {
+        alert("請輸入簡報主題");
+        return;
+      }
+
+      if (systemConfig.requireEmail && !emailInput.value.trim()) {
+        alert("請填寫 Email");
+        return;
+      }
+
+      if (!selectedDate) {
+        alert("請選擇最後保留日");
+        return;
+      }
+
+      if (selectedDate < minDateStr || selectedDate > maxDateStr) {
+        alert(`最後保留日需介於 ${minDateStr} ～ ${maxDateStr}`);
+        return;
+      }
+
+      const travelData = {
+        presentationId: isEditMode ? presentationId : crypto.randomUUID(),
+        type: "travel",
+        title: titleInput.value.trim(),
+        email: emailInput.value.trim(),
+        expiresAt: selectedDate,
+        data: {
+          days: 1,
+          location: ""
+        }
+      };
+
+      try {
+        // 1. localStorage（保留做 debug）
+        localStorage.setItem(
+          `presentation:${travelData.presentationId}`,
+          JSON.stringify(travelData)
+        );
+        result.textContent = JSON.stringify(travelData, null, 2);
+        renderStorage();
+
+        // 2. 存 Supabase
+        const saveRes = await fetch("/api/save-presentation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(travelData)
+        });
+
+        const saveJson = await saveRes.json().catch(() => ({}));
+        console.log("saveJson =", saveJson);
+
+        if (!saveRes.ok) {
+          alert(saveJson.detail || saveJson.error || "儲存失敗");
+          return;
+        }
+
+        // 3. 生成 PPT
+        const generateRes = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(travelData)
+        });
+
+        if (!generateRes.ok) {
+          const errJson = await generateRes.json().catch(() => ({}));
+          alert(errJson.error || "簡報建立失敗");
+          return;
+        }
+
+        alert(isEditMode ? "已更新並產出簡報" : "已建立並產出簡報");
+
+        const blob = await generateRes.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${travelData.title || "presentation"}.pptx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+
+        // 4. 若是新建，順便更新畫面提示
+        if (!isEditMode) {
+          presentationInfo.textContent = `新建完成：${travelData.presentationId}`;
+        }
+      } catch (err) {
+        console.error("submit error =", err);
+        alert("發生錯誤，請稍後再試");
+      }
+    });
+
+    loadPresentation();
   </script>
 </body>
 </html>
