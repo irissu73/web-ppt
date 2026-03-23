@@ -4,157 +4,110 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI 幫你做簡報</title>
-</head>
-
-<body>
-  <h1>AI 幫你做簡報</h1>
-
-  <form id="form">
-    <div>
-      <label>簡報類型</label><br />
-      <select id="type">
-        <option value="travel">行程安排</option>
-        <option value="compare">比較分析</option>
-        <option value="lesson">教學簡報</option>
-        <option value="proposal">提案簡報</option>
-      </select>
-    </div>
-
-    <br />
-
-    <div>
-      <label>簡報主題</label><br />
-      <input type="text" id="title" required />
-    </div>
-
-    <br />
-
-    <div>
-      <label>Email</label><br />
-      <input type="email" id="email" />
-    </div>
-
-    <br />
-
-    <div>
-      <label>最後保留日</label><br />
-      <input type="date" id="expire" required />
-    </div>
-
-    <br />
-
-    <button type="submit">建立簡報</button>
-  </form>
-
-  <h3>目前送出的資料</h3>
-  <pre id="result"></pre>
-
-  <script type="module">
-    import { systemConfig } from "./config/systemConfig.js";
-
-    const form = document.getElementById("form");
-    const result = document.getElementById("result");
-
-    const emailInput = document.getElementById("email");
-    const expireInput = document.getElementById("expire");
-
-    emailInput.required = systemConfig.requireEmail;
-
-    function formatDateLocal(date) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, "0");
-      const d = String(date.getDate()).padStart(2, "0");
-      return `${y}-${m}-${d}`;
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f7f7fb;
+      color: #222;
     }
 
-    // ===== 日期限制 =====
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + systemConfig.maxExpireDays);
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+    }
 
-    const minDateStr = formatDateLocal(today);
-    const maxDateStr = formatDateLocal(maxDate);
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
 
-    expireInput.min = minDateStr;
-    expireInput.max = maxDateStr;
+    .desc {
+      color: #666;
+      margin-bottom: 24px;
+    }
 
-    // ===== submit =====
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
 
-      const title = document.getElementById("title").value.trim();
-      const email = emailInput.value.trim();
-      const type = document.getElementById("type").value;
-      const expiresAt = expireInput.value;
-
-      if (!title) {
-        alert("請輸入主題");
-        return;
+    @media (min-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
       }
+    }
 
-      if (systemConfig.requireEmail && !email) {
-        alert("請填寫 Email");
-        return;
-      }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      border: 1px solid #eee;
+    }
 
-      if (!expiresAt) {
-        alert("請選擇日期");
-        return;
-      }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
 
-      if (expiresAt < minDateStr || expiresAt > maxDateStr) {
-        alert(`日期需介於 ${minDateStr} ～ ${maxDateStr}`);
-        return;
-      }
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
 
-      const presentationId = crypto.randomUUID();
+    .card-text {
+      color: #666;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>AI 幫你做簡報</h1>
+    <p class="desc">你想做哪一種簡報？</p>
 
-      const payload = {
-        presentationId,
-        type,
-        title,
-        email,
-        expiresAt,
-        data: {}
-      };
+    <div class="grid">
+      <div class="card" onclick="go('travel-create.html')">
+        <div class="card-title">行程安排</div>
+        <div class="card-text">
+          用於旅遊、出遊、活動規劃等情境，建立可持續編修的行程型簡報。
+        </div>
+      </div>
 
-      result.textContent = JSON.stringify(payload, null, 2);
+      <div class="card" onclick="go('compare-create.html')">
+        <div class="card-title">比較分析</div>
+        <div class="card-text">
+          用於方案、產品、服務或選項比較，整理重點差異與結論。
+        </div>
+      </div>
 
-      try {
-        // 👉 直接打 generate（裡面已包含寄信）
-        const res = await fetch("/api/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
+      <div class="card" onclick="go('lesson-create.html')">
+        <div class="card-title">教學說明</div>
+        <div class="card-text">
+          用於教學內容、操作說明、流程教學，整理步驟與重點。
+        </div>
+      </div>
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          alert(err.error || "建立失敗");
-          return;
-        }
+      <div class="card" onclick="go('proposal-create.html')">
+        <div class="card-title">提案簡報</div>
+        <div class="card-text">
+          用於企劃、提案、構想說明，整理問題、方向與效益。
+        </div>
+      </div>
+    </div>
+  </div>
 
-        alert("簡報已建立，信件已寄出");
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${title || "presentation"}.pptx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        window.URL.revokeObjectURL(url);
-
-      } catch (err) {
-        console.error(err);
-        alert("發生錯誤");
-      }
-    });
+  <script>
+    function go(path) {
+      window.location.href = path;
+    }
   </script>
 </body>
 </html>
