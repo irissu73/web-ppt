@@ -12,7 +12,8 @@ export default async function handler(req, res) {
 
   try {
     const presentation = req.body || {};
-    console.log("input =", presentation);
+
+    console.log("save-presentation input =", presentation);
 
     if (!presentation.presentationId) {
       return res.status(400).json({ error: "缺少 presentationId" });
@@ -31,21 +32,21 @@ export default async function handler(req, res) {
       .select();
 
     if (error) {
-      console.error("supabase error =", error);
+      console.error("supabase insert error =", error);
       return res.status(500).json({
         error: "儲存失敗",
         detail: error.message
       });
     }
 
-    console.log("saved data =", data);
+    console.log("supabase inserted data =", data);
 
     return res.status(200).json({
       message: "saved",
       saved: data
     });
   } catch (err) {
-    console.error("catch error =", err);
+    console.error("save-presentation catch error =", err);
     return res.status(500).json({
       error: "儲存失敗",
       detail: err?.message || String(err)
