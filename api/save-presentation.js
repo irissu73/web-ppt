@@ -42,17 +42,21 @@ export default async function handler(req, res) {
 
     // ===== upsert =====
     const { data, error } = await supabase
-      .from("presentations")
-      .upsert({
-        presentationId: presentation.presentationId,
-        type: presentation.type,
-        title: presentation.title,
-        email: presentation.email,
-        expiresAt: presentation.expiresAt,
-        data: presentation.data || {}
-      })
-      .select();
-
+  .from("presentations")
+  .upsert(
+    {
+      presentationId: presentation.presentationId,
+      type: presentation.type,
+      title: presentation.title,
+      email: presentation.email,
+      expiresAt: presentation.expiresAt,
+      data: presentation.data || {}
+    },
+    {
+      onConflict: "presentationId"
+    }
+  )
+  .select();
     if (error) {
       console.error("supabase upsert error =", error);
       return res.status(500).json({
