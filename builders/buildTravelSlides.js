@@ -1,4 +1,14 @@
 export function buildTravelSlides(data) {
+  const savedSlides = data?.data?.slides || [];
+
+  if (savedSlides.length > 0) {
+    return {
+      title: data.title,
+      slides: savedSlides
+    };
+  }
+
+  // 如果真的沒有 slides，才退回預設內容
   return {
     title: data.title,
     slides: [
