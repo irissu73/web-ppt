@@ -137,8 +137,6 @@
         <button type="button" id="generateBtn">產生簡報</button>
       </div>
 
-      <h3 style="margin-top: 24px;">目前資料</h3>
-      <pre id="result"></pre>
     </div>
   </div>
 
@@ -160,7 +158,6 @@
     const slidesEditor = document.getElementById("slidesEditor");
     const saveBtn = document.getElementById("saveBtn");
     const generateBtn = document.getElementById("generateBtn");
-    const result = document.getElementById("result");
 
     let currentPresentation = null;
 
@@ -287,9 +284,7 @@
       };
     }
 
-    function renderCurrentResult(data) {
-      result.textContent = JSON.stringify(data, null, 2);
-    }
+
 
     async function loadPresentation() {
       if (!presentationId) {
@@ -317,7 +312,6 @@
         locationInput.value = data.data?.location || "";
 
         renderSlidesEditor(data.data?.slides || []);
-        renderCurrentResult(data);
 
         presentationInfo.textContent = `編修模式：${presentationId}`;
         editorArea.style.display = "block";
