@@ -82,6 +82,32 @@
       font-size: 16px;
       cursor: pointer;
     }
+    
+    .slide-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.slide-actions button {
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.mini-btn {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.danger-btn {
+  background: #fff5f5;
+  border: 1px solid #f0b4b4;
+  color: #b42318;
+  border-radius: 8px;
+}
+    
   </style>
 </head>
 <body>
@@ -180,50 +206,68 @@
       slidesEditor.innerHTML = slides.map((slide, index) => {
         if (slide.slideType === "cover") {
           return `
-            <div class="slide-card">
-              <div class="slide-title">第 ${index + 1} 頁｜封面</div>
+  <div class="slide-card">
+    <div class="slide-title">第 ${index + 1} 頁｜封面</div>
 
-              <label>主標</label>
-              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+    <label>主標</label>
+    <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
 
-              <br /><br />
+    <br /><br />
 
-              <label>副標</label>
-              <input type="text" data-slide-index="${index}" data-field="subtitle" value="${slide.subtitle || ""}" />
-            </div>
-          `;
+    <label>副標</label>
+    <input type="text" data-slide-index="${index}" data-field="subtitle" value="${slide.subtitle || ""}" />
+
+    <div class="slide-actions">
+      <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
+      <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
+      <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
+    </div>
+  </div>
+`;
         }
 
         if (slide.slideType === "timeline") {
           return `
-            <div class="slide-card">
-              <div class="slide-title">第 ${index + 1} 頁｜行程頁</div>
+  <div class="slide-card">
+    <div class="slide-title">第 ${index + 1} 頁｜行程頁</div>
 
-              <label>頁面標題</label>
-              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+    <label>頁面標題</label>
+    <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
 
-              <br /><br />
+    <br /><br />
 
-              <label>內容（每行一項）</label>
-              <textarea data-slide-index="${index}" data-field="items">${(slide.items || []).join("\n")}</textarea>
-            </div>
-          `;
+    <label>內容（每行一項）</label>
+    <textarea data-slide-index="${index}" data-field="items">${(slide.items || []).join("\n")}</textarea>
+
+    <div class="slide-actions">
+      <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
+      <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
+      <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
+    </div>
+  </div>
+`;
         }
 
         if (slide.slideType === "bullet") {
           return `
-            <div class="slide-card">
-              <div class="slide-title">第 ${index + 1} 頁｜重點頁</div>
+  <div class="slide-card">
+    <div class="slide-title">第 ${index + 1} 頁｜重點頁</div>
 
-              <label>頁面標題</label>
-              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+    <label>頁面標題</label>
+    <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
 
-              <br /><br />
+    <br /><br />
 
-              <label>內容（每行一項）</label>
-              <textarea data-slide-index="${index}" data-field="points">${(slide.points || []).join("\n")}</textarea>
-            </div>
-          `;
+    <label>內容（每行一項）</label>
+    <textarea data-slide-index="${index}" data-field="points">${(slide.points || []).join("\n")}</textarea>
+
+    <div class="slide-actions">
+      <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
+      <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
+      <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
+    </div>
+  </div>
+`;
         }
 
         return `
@@ -234,6 +278,45 @@
         `;
       }).join("");
     }
+
+//iris add start
+function createNewTimelineSlide(dayNumber) {
+  return {
+    slideType: "timeline",
+    title: `Day ${dayNumber}`,
+    items: [
+      "09:00 出發",
+      "10:30 景點",
+      "12:00 午餐"
+    ]
+  };
+}
+
+function createNewBulletSlide() {
+  return {
+    slideType: "bullet",
+    title: "新重點頁",
+    points: [
+      "重點 1",
+      "重點 2"
+    ]
+  };
+}
+
+function refreshEditorWithSlides(nextSlides) {
+  if (!currentPresentation) return;
+
+  currentPresentation = {
+    ...currentPresentation,
+    data: {
+      ...currentPresentation.data,
+      slides: nextSlides
+    }
+  };
+
+  renderSlidesEditor(nextSlides);
+}
+//iris add end
 
     function collectSlidesFromEditor() {
       const originalSlides = currentPresentation?.data?.slides || [];
@@ -274,6 +357,39 @@
         }
       };
     }
+    
+    window.insertTimelineSlide = function(index) {
+  const currentSlides = collectSlidesFromEditor();
+  const timelineCount = currentSlides.filter(s => s.slideType === "timeline").length;
+  const newSlide = createNewTimelineSlide(timelineCount + 1);
+
+  const nextSlides = [...currentSlides];
+  nextSlides.splice(index + 1, 0, newSlide);
+
+  refreshEditorWithSlides(nextSlides);
+};
+
+window.insertBulletSlide = function(index) {
+  const currentSlides = collectSlidesFromEditor();
+  const newSlide = createNewBulletSlide();
+
+  const nextSlides = [...currentSlides];
+  nextSlides.splice(index + 1, 0, newSlide);
+
+  refreshEditorWithSlides(nextSlides);
+};
+
+window.deleteSlide = function(index) {
+  const currentSlides = collectSlidesFromEditor();
+
+  if (currentSlides.length <= 1) {
+    alert("至少需要保留 1 頁");
+    return;
+  }
+
+  const nextSlides = currentSlides.filter((_, i) => i !== index);
+  refreshEditorWithSlides(nextSlides);
+};
 
     async function loadPresentation() {
       if (!presentationId) {
