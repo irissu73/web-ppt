@@ -4,67 +4,165 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>行程安排編修</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f7f7fb;
+      color: #222;
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    .info {
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .block {
+      margin-bottom: 20px;
+      padding: 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      background: #fafafa;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .slide-card {
+      margin-bottom: 16px;
+      padding: 16px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      background: white;
+    }
+
+    .slide-title {
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    button {
+      padding: 12px 16px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 8px;
+    }
+  </style>
 </head>
 <body>
-  <h1>行程安排編修</h1>
-  <p id="presentationInfo"></p>
+  <div class="wrap">
+    <h1>行程安排編修</h1>
+    <p id="presentationInfo" class="info"></p>
 
-  <form id="travelForm">
-    <div>
-      <label for="titleInput">簡報主題</label><br />
-      <input type="text" id="titleInput" required />
+    <div id="editorArea" style="display:none;">
+      <div class="block">
+        <h3>基本資料</h3>
+
+        <div style="margin-bottom: 16px;">
+          <label for="titleInput">簡報主題</label>
+          <input type="text" id="titleInput" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label for="email">Email</label>
+          <input type="email" id="email" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label for="expire">最後保留日</label>
+          <input type="date" id="expire" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label for="days">天數</label>
+          <input type="number" id="days" min="1" max="10" />
+        </div>
+
+        <div>
+          <label for="location">地點</label>
+          <input type="text" id="location" />
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>頁次內容</h3>
+        <div id="slidesEditor"></div>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="saveBtn">儲存編修內容</button>
+        <button type="button" id="generateBtn">產生簡報</button>
+      </div>
+
+      <h3 style="margin-top: 24px;">目前資料</h3>
+      <pre id="result"></pre>
     </div>
-
-    <br />
-
-    <div>
-      <label for="email">Email</label><br />
-      <input type="email" id="email" />
-    </div>
-
-    <br />
-
-    <div>
-      <label for="expire">最後保留日</label><br />
-      <input type="date" id="expire" required />
-    </div>
-
-    <br />
-
-    <div>
-      <label for="days">天數</label><br />
-      <input type="number" id="days" min="1" max="10" value="1" />
-    </div>
-
-    <br />
-
-    <div>
-      <label for="location">地點</label><br />
-      <input type="text" id="location" />
-    </div>
-
-    <br />
-
-    <button type="submit" id="submitBtn">更新行程資料</button>
-  </form>
-
-  <h3>目前資料</h3>
-  <pre id="result"></pre>
+  </div>
 
   <script type="module">
     import { systemConfig } from "./config/systemConfig.js";
 
-    const form = document.getElementById("travelForm");
+    const params = new URLSearchParams(window.location.search);
+    const presentationId = params.get("presentationId");
+
+    const presentationInfo = document.getElementById("presentationInfo");
+    const editorArea = document.getElementById("editorArea");
+
     const titleInput = document.getElementById("titleInput");
     const emailInput = document.getElementById("email");
     const expireInput = document.getElementById("expire");
     const daysInput = document.getElementById("days");
     const locationInput = document.getElementById("location");
-    const result = document.getElementById("result");
-    const presentationInfo = document.getElementById("presentationInfo");
 
-    const params = new URLSearchParams(window.location.search);
-    const presentationId = params.get("presentationId");
+    const slidesEditor = document.getElementById("slidesEditor");
+    const saveBtn = document.getElementById("saveBtn");
+    const generateBtn = document.getElementById("generateBtn");
+    const result = document.getElementById("result");
+
+    let currentPresentation = null;
 
     emailInput.required = systemConfig.requireEmail;
 
@@ -85,10 +183,117 @@
     expireInput.min = minDateStr;
     expireInput.max = maxDateStr;
 
+    function renderSlidesEditor(slides = []) {
+      if (!slides.length) {
+        slidesEditor.innerHTML = "<p>目前沒有頁次內容</p>";
+        return;
+      }
+
+      slidesEditor.innerHTML = slides.map((slide, index) => {
+        if (slide.slideType === "cover") {
+          return `
+            <div class="slide-card">
+              <div class="slide-title">第 ${index + 1} 頁｜封面</div>
+
+              <label>主標</label>
+              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+
+              <br /><br />
+
+              <label>副標</label>
+              <input type="text" data-slide-index="${index}" data-field="subtitle" value="${slide.subtitle || ""}" />
+            </div>
+          `;
+        }
+
+        if (slide.slideType === "timeline") {
+          return `
+            <div class="slide-card">
+              <div class="slide-title">第 ${index + 1} 頁｜行程頁</div>
+
+              <label>頁面標題</label>
+              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+
+              <br /><br />
+
+              <label>內容（每行一項）</label>
+              <textarea data-slide-index="${index}" data-field="items">${(slide.items || []).join("\n")}</textarea>
+            </div>
+          `;
+        }
+
+        if (slide.slideType === "bullet") {
+          return `
+            <div class="slide-card">
+              <div class="slide-title">第 ${index + 1} 頁｜重點頁</div>
+
+              <label>頁面標題</label>
+              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+
+              <br /><br />
+
+              <label>內容（每行一項）</label>
+              <textarea data-slide-index="${index}" data-field="points">${(slide.points || []).join("\n")}</textarea>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="slide-card">
+            <div class="slide-title">第 ${index + 1} 頁｜${slide.slideType}</div>
+            <p>目前尚未支援此頁型編修</p>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function collectSlidesFromEditor() {
+      const originalSlides = currentPresentation?.data?.slides || [];
+      const nextSlides = originalSlides.map(slide => ({ ...slide }));
+
+      const fields = slidesEditor.querySelectorAll("[data-slide-index][data-field]");
+
+      fields.forEach((el) => {
+        const index = Number(el.dataset.slideIndex);
+        const field = el.dataset.field;
+
+        if (!nextSlides[index]) return;
+
+        if (field === "items" || field === "points") {
+          nextSlides[index][field] = el.value
+            .split("\n")
+            .map(s => s.trim())
+            .filter(Boolean);
+        } else {
+          nextSlides[index][field] = el.value;
+        }
+      });
+
+      return nextSlides;
+    }
+
+    function buildPayloadForSave() {
+      return {
+        presentationId,
+        type: "travel",
+        title: titleInput.value.trim(),
+        email: emailInput.value.trim(),
+        expiresAt: expireInput.value,
+        data: {
+          days: Number(daysInput.value || 1),
+          location: locationInput.value.trim(),
+          slides: collectSlidesFromEditor()
+        }
+      };
+    }
+
+    function renderCurrentResult(data) {
+      result.textContent = JSON.stringify(data, null, 2);
+    }
+
     async function loadPresentation() {
       if (!presentationId) {
         presentationInfo.textContent = "請先從首頁建立簡報";
-        form.style.display = "none";
         return;
       }
 
@@ -99,11 +304,11 @@
 
         if (!res.ok) {
           presentationInfo.textContent = `找不到資料：${presentationId}`;
-          form.style.display = "none";
           return;
         }
 
         const data = await res.json();
+        currentPresentation = data;
 
         titleInput.value = data.title || "";
         emailInput.value = data.email || "";
@@ -111,56 +316,39 @@
         daysInput.value = data.data?.days || 1;
         locationInput.value = data.data?.location || "";
 
-        result.textContent = JSON.stringify(data, null, 2);
+        renderSlidesEditor(data.data?.slides || []);
+        renderCurrentResult(data);
+
         presentationInfo.textContent = `編修模式：${presentationId}`;
+        editorArea.style.display = "block";
       } catch (err) {
         console.error(err);
         presentationInfo.textContent = "讀取資料失敗";
-        form.style.display = "none";
       }
     }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    async function savePresentation() {
+      const payload = buildPayloadForSave();
 
-      const selectedDate = expireInput.value;
-
-      if (!presentationId) {
-        alert("缺少 presentationId");
-        return;
-      }
-
-      if (!titleInput.value.trim()) {
+      if (!payload.title) {
         alert("請輸入簡報主題");
-        return;
+        return false;
       }
 
-      if (systemConfig.requireEmail && !emailInput.value.trim()) {
+      if (systemConfig.requireEmail && !payload.email) {
         alert("請填寫 Email");
-        return;
+        return false;
       }
 
-      if (!selectedDate) {
+      if (!payload.expiresAt) {
         alert("請選擇最後保留日");
-        return;
+        return false;
       }
 
-      if (selectedDate < minDateStr || selectedDate > maxDateStr) {
+      if (payload.expiresAt < minDateStr || payload.expiresAt > maxDateStr) {
         alert(`最後保留日需介於 ${minDateStr} ～ ${maxDateStr}`);
-        return;
+        return false;
       }
-
-      const payload = {
-        presentationId,
-        type: "travel",
-        title: titleInput.value.trim(),
-        email: emailInput.value.trim(),
-        expiresAt: selectedDate,
-        data: {
-          days: Number(daysInput.value || 1),
-          location: locationInput.value.trim()
-        }
-      };
 
       try {
         const saveRes = await fetch("/api/save-presentation", {
@@ -175,14 +363,61 @@
 
         if (!saveRes.ok) {
           alert(saveJson.detail || saveJson.error || "更新失敗");
+          return false;
+        }
+
+        currentPresentation = payload;
+        renderCurrentResult(payload);
+        return true;
+      } catch (err) {
+        console.error(err);
+        alert("儲存失敗");
+        return false;
+      }
+    }
+
+    saveBtn.addEventListener("click", async () => {
+      const ok = await savePresentation();
+      if (ok) {
+        alert("已更新行程資料");
+      }
+    });
+
+    generateBtn.addEventListener("click", async () => {
+      const ok = await savePresentation();
+      if (!ok) return;
+
+      try {
+        const generateRes = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(currentPresentation)
+        });
+
+        if (!generateRes.ok) {
+          const errJson = await generateRes.json().catch(() => ({}));
+          alert(errJson.error || "產生簡報失敗");
           return;
         }
 
-        result.textContent = JSON.stringify(payload, null, 2);
-        alert("已更新行程資料");
+        const blob = await generateRes.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${currentPresentation.title || "presentation"}.pptx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+
+        alert("已產生簡報");
       } catch (err) {
         console.error(err);
-        alert("發生錯誤，請稍後再試");
+        alert("產生簡報失敗");
       }
     });
 
