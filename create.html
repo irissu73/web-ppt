@@ -94,8 +94,6 @@
       <button type="submit">建立草稿</button>
     </form>
 
-    <h3>目前送出的資料</h3>
-    <pre id="result"></pre>
   </div>
 
   <script type="module">
@@ -113,7 +111,6 @@
     const titleInput = document.getElementById("titleInput");
     const emailInput = document.getElementById("email");
     const expireInput = document.getElementById("expire");
-    const result = document.getElementById("result");
 
     const typeMetaMap = {
       travel: {
@@ -320,8 +317,6 @@
         expiresAt,
         data: buildInitialDataByType(type, title)
       };
-
-      result.textContent = JSON.stringify(payload, null, 2);
 
       try {
         const saveRes = await fetch("/api/save-presentation", {
