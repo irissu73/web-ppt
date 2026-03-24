@@ -124,29 +124,59 @@ async function generatePptBuffer(slideJson) {
     
 if (slide.slideType === "cover") {
   const s = pptx.addSlide();
-  applyBaseLayout(s, pptx);
 
-  // 主標
+  // 背景（深色）
+  s.background = { fill: "4F46E5" };
+
+  // 漸層感（右下淡色塊）
+  s.addShape(pptx.ShapeType.ellipse, {
+    x: 6,
+    y: 3,
+    w: 6,
+    h: 4,
+    fill: { color: "6366F1" },
+    transparency: 50
+  });
+
+  // 左上淡光
+  s.addShape(pptx.ShapeType.ellipse, {
+    x: -2,
+    y: -1,
+    w: 5,
+    h: 3,
+    fill: { color: "818CF8" },
+    transparency: 60
+  });
+
+  // 主標（大字）
   s.addText(slide.title || "", {
     x: 1,
-    y: 2,
+    y: 2.2,
     w: 8,
     h: 1,
-    fontSize: 36,
+    fontSize: 40,
     bold: true,
-    color: "111827",
+    color: "FFFFFF",
     align: "center"
   });
 
   // 副標
   s.addText(slide.subtitle || "", {
     x: 1,
-    y: 3,
+    y: 3.3,
     w: 8,
     h: 0.8,
-    fontSize: 18,
-    color: "6B7280",
+    fontSize: 20,
+    color: "E0E7FF",
     align: "center"
+  });
+
+  // footer
+  s.addText("IRIS AI PPT", {
+    x: 0.5,
+    y: 6.5,
+    fontSize: 10,
+    color: "C7D2FE"
   });
 
   continue;
