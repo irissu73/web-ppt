@@ -216,4 +216,194 @@
               <div class="slide-title">第 ${index + 1} 頁｜重點頁</div>
 
               <label>頁面標題</label>
-              <input type="text" data-slide-index
+              <input type="text" data-slide-index="${index}" data-field="title" value="${slide.title || ""}" />
+
+              <br /><br />
+
+              <label>內容（每行一項）</label>
+              <textarea data-slide-index="${index}" data-field="points">${(slide.points || []).join("\n")}</textarea>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="slide-card">
+            <div class="slide-title">第 ${index + 1} 頁｜${slide.slideType}</div>
+            <p>目前尚未支援此頁型編修</p>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function collectSlidesFromEditor() {
+      const originalSlides = currentPresentation?.data?.slides || [];
+      const nextSlides = originalSlides.map(slide => ({ ...slide }));
+
+      const fields = slidesEditor.querySelectorAll("[data-slide-index][data-field]");
+
+      fields.forEach((el) => {
+        const index = Number(el.dataset.slideIndex);
+        const field = el.dataset.field;
+
+        if (!nextSlides[index]) return;
+
+        if (field === "items" || field === "points") {
+          nextSlides[index][field] = el.value
+            .split("\n")
+            .map(s => s.trim())
+            .filter(Boolean);
+        } else {
+          nextSlides[index][field] = el.value;
+        }
+      });
+
+      return nextSlides;
+    }
+
+    function buildPayloadForSave() {
+      return {
+        presentationId,
+        type: "travel",
+        title: titleInput.value.trim(),
+        email: emailInput.value.trim(),
+        expiresAt: expireInput.value,
+        data: {
+          days: Number(daysInput.value || 1),
+          location: locationInput.value.trim(),
+          slides: collectSlidesFromEditor()
+        }
+      };
+    }
+
+    async function loadPresentation() {
+      if (!presentationId) {
+        presentationInfo.textContent = "請先從首頁建立簡報";
+        return;
+      }
+
+      presentationInfo.textContent = `讀取中...`;
+
+      try {
+        const res = await fetch(`/api/get-presentation?presentationId=${encodeURIComponent(presentationId)}`);
+
+        if (!res.ok) {
+          presentationInfo.textContent = "找不到這份簡報";
+          return;
+        }
+
+        const data = await res.json();
+        currentPresentation = data;
+
+        titleInput.value = data.title || "";
+        emailInput.value = data.email || "";
+        expireInput.value = data.expiresAt || "";
+        daysInput.value = data.data?.days || 1;
+        locationInput.value = data.data?.location || "";
+
+        renderSlidesEditor(data.data?.slides || []);
+
+        presentationInfo.textContent = "草稿已載入";
+        editorArea.style.display = "block";
+      } catch (err) {
+        console.error(err);
+        presentationInfo.textContent = "讀取資料失敗";
+      }
+    }
+
+    async function savePresentation() {
+      const payload = buildPayloadForSave();
+
+      if (!payload.title) {
+        alert("請輸入簡報主題");
+        return false;
+      }
+
+      if (systemConfig.requireEmail && !payload.email) {
+        alert("請填寫 Email");
+        return false;
+      }
+
+      if (!payload.expiresAt) {
+        alert("請選擇最後保留日");
+        return false;
+      }
+
+      if (payload.expiresAt < minDateStr || payload.expiresAt > maxDateStr) {
+        alert(`最後保留日需介於 ${minDateStr} ～ ${maxDateStr}`);
+        return false;
+      }
+
+      try {
+        const saveRes = await fetch("/api/save-presentation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const saveJson = await saveRes.json().catch(() => ({}));
+
+        if (!saveRes.ok) {
+          alert(saveJson.detail || saveJson.error || "更新失敗");
+          return false;
+        }
+
+        currentPresentation = payload;
+        return true;
+      } catch (err) {
+        console.error(err);
+        alert("儲存失敗");
+        return false;
+      }
+    }
+
+    saveBtn.addEventListener("click", async () => {
+      const ok = await savePresentation();
+      if (ok) {
+        alert("已儲存編修內容");
+      }
+    });
+
+    generateBtn.addEventListener("click", async () => {
+      const ok = await savePresentation();
+      if (!ok) return;
+
+      try {
+        const generateRes = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(currentPresentation)
+        });
+
+        if (!generateRes.ok) {
+          const errJson = await generateRes.json().catch(() => ({}));
+          alert(errJson.error || "產生簡報失敗");
+          return;
+        }
+
+        const blob = await generateRes.blob();
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${currentPresentation.title || "presentation"}.pptx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+
+        alert("已產生簡報");
+      } catch (err) {
+        console.error(err);
+        alert("產生簡報失敗");
+      }
+    });
+
+    loadPresentation();
+  </script>
+</body>
+</html>
