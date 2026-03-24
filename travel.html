@@ -218,10 +218,12 @@
     <input type="text" data-slide-index="${index}" data-field="subtitle" value="${slide.subtitle || ""}" />
 
     <div class="slide-actions">
-      <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
-      <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
-      <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
-    </div>
+  <button type="button" class="mini-btn" onclick="window.moveSlideUp(${index})">↑ 上移</button>
+  <button type="button" class="mini-btn" onclick="window.moveSlideDown(${index})">↓ 下移</button>
+  <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
+  <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
+  <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
+</div>
   </div>
 `;
         }
@@ -240,10 +242,12 @@
     <textarea data-slide-index="${index}" data-field="items">${(slide.items || []).join("\n")}</textarea>
 
     <div class="slide-actions">
-      <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
-      <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
-      <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
-    </div>
+  <button type="button" class="mini-btn" onclick="window.moveSlideUp(${index})">↑ 上移</button>
+  <button type="button" class="mini-btn" onclick="window.moveSlideDown(${index})">↓ 下移</button>
+  <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
+  <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
+  <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
+</div>
   </div>
 `;
         }
@@ -262,10 +266,12 @@
     <textarea data-slide-index="${index}" data-field="points">${(slide.points || []).join("\n")}</textarea>
 
     <div class="slide-actions">
-      <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
-      <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
-      <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
-    </div>
+  <button type="button" class="mini-btn" onclick="window.moveSlideUp(${index})">↑ 上移</button>
+  <button type="button" class="mini-btn" onclick="window.moveSlideDown(${index})">↓ 下移</button>
+  <button type="button" class="mini-btn" onclick="window.insertTimelineSlide(${index})">＋ 在下方新增行程頁</button>
+  <button type="button" class="mini-btn" onclick="window.insertBulletSlide(${index})">＋ 在下方新增重點頁</button>
+  <button type="button" class="danger-btn" onclick="window.deleteSlide(${index})">刪除此頁</button>
+</div>
   </div>
 `;
         }
@@ -387,9 +393,36 @@ window.deleteSlide = function(index) {
     return;
   }
 
+  if (index === 0) {
+    alert("封面頁暫時不可刪除");
+    return;
+  }
+
   const nextSlides = currentSlides.filter((_, i) => i !== index);
   refreshEditorWithSlides(nextSlides);
 };
+window.moveSlideUp = function(index) {
+  const currentSlides = collectSlidesFromEditor();
+
+  if (index <= 0) return;
+
+  const nextSlides = [...currentSlides];
+  [nextSlides[index - 1], nextSlides[index]] = [nextSlides[index], nextSlides[index - 1]];
+
+  refreshEditorWithSlides(nextSlides);
+};
+
+window.moveSlideDown = function(index) {
+  const currentSlides = collectSlidesFromEditor();
+
+  if (index >= currentSlides.length - 1) return;
+
+  const nextSlides = [...currentSlides];
+  [nextSlides[index], nextSlides[index + 1]] = [nextSlides[index + 1], nextSlides[index]];
+
+  refreshEditorWithSlides(nextSlides);
+};
+
 
     async function loadPresentation() {
       if (!presentationId) {
