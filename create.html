@@ -38,7 +38,7 @@
       font-weight: 700;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
       padding: 10px;
       font-size: 16px;
@@ -87,11 +87,11 @@
         <input type="date" id="expire" required />
       </div>
 
-      <div class="section-title" id="typeSectionTitle">類型資料</div>
+      <div class="section-title">類型資料</div>
       <div id="typeFields"></div>
 
       <br />
-      <button type="submit" id="submitBtn">建立簡報</button>
+      <button type="submit">建立草稿</button>
     </form>
 
     <h3>目前送出的資料</h3>
@@ -100,6 +100,7 @@
 
   <script type="module">
     import { systemConfig } from "./config/systemConfig.js";
+    import { buildTravelSlides } from "./builders/buildTravelSlides.js";
 
     const params = new URLSearchParams(window.location.search);
     const type = params.get("type");
@@ -116,23 +117,23 @@
 
     const typeMetaMap = {
       travel: {
-        title: "建立行程安排簡報",
-        desc: "先建立基本資料，再進入行程編修頁。",
+        title: "建立行程安排草稿",
+        desc: "先建立行程草稿，再進入頁次編修。",
         editPage: "travel.html"
       },
       compare: {
-        title: "建立比較分析簡報",
-        desc: "先建立基本資料，再進入比較分析編修頁。",
+        title: "建立比較分析草稿",
+        desc: "先建立基本資料，之後再補比較頁內容。",
         editPage: "compare.html"
       },
       lesson: {
-        title: "建立教學說明簡報",
-        desc: "先建立基本資料，再進入教學說明編修頁。",
+        title: "建立教學說明草稿",
+        desc: "先建立基本資料，之後再補教學頁內容。",
         editPage: "lesson.html"
       },
       proposal: {
-        title: "建立提案簡報",
-        desc: "先建立基本資料，再進入提案編修頁。",
+        title: "建立提案草稿",
+        desc: "先建立基本資料，之後再補提案頁內容。",
         editPage: "proposal.html"
       }
     };
@@ -173,7 +174,7 @@
         typeFields.innerHTML = `
           <div>
             <label for="days">天數</label><br />
-            <input type="number" id="days" min="1" max="10" value="1" />
+            <input type="number" id="days" min="1" max="10" value="2" />
           </div>
           <br />
           <div>
@@ -231,36 +232,55 @@
 
     renderTypeFields(type);
 
-    function buildTypeData(type) {
+    function buildInitialDataByType(type, title) {
       if (type === "travel") {
+        const days = Number(document.getElementById("days")?.value || 1);
+        const location = document.getElementById("location")?.value?.trim() || "";
+
+        const baseData = {
+          days,
+          location
+        };
+
+        const slideSeed = {
+          title,
+          type: "travel",
+          data: baseData
+        };
+
+        const slideResult = buildTravelSlides(slideSeed);
+
         return {
-          days: Number(document.getElementById("days")?.value || 1),
-          location: document.getElementById("location")?.value || ""
+          ...baseData,
+          slides: slideResult.slides || []
         };
       }
 
       if (type === "compare") {
         return {
-          leftTitle: document.getElementById("leftTitle")?.value || "",
-          rightTitle: document.getElementById("rightTitle")?.value || ""
+          leftTitle: document.getElementById("leftTitle")?.value?.trim() || "",
+          rightTitle: document.getElementById("rightTitle")?.value?.trim() || "",
+          slides: []
         };
       }
 
       if (type === "lesson") {
         return {
-          lessonTopic: document.getElementById("lessonTopic")?.value || "",
-          lessonAudience: document.getElementById("lessonAudience")?.value || ""
+          lessonTopic: document.getElementById("lessonTopic")?.value?.trim() || "",
+          lessonAudience: document.getElementById("lessonAudience")?.value?.trim() || "",
+          slides: []
         };
       }
 
       if (type === "proposal") {
         return {
-          proposalTarget: document.getElementById("proposalTarget")?.value || "",
-          proposalGoal: document.getElementById("proposalGoal")?.value || ""
+          proposalTarget: document.getElementById("proposalTarget")?.value?.trim() || "",
+          proposalGoal: document.getElementById("proposalGoal")?.value?.trim() || "",
+          slides: []
         };
       }
 
-      return {};
+      return { slides: [] };
     }
 
     form.addEventListener("submit", async (e) => {
@@ -298,7 +318,7 @@
         title,
         email,
         expiresAt,
-        data: buildTypeData(type)
+        data: buildInitialDataByType(type, title)
       };
 
       result.textContent = JSON.stringify(payload, null, 2);
@@ -319,32 +339,7 @@
           return;
         }
 
-        const generateRes = await fetch("/api/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!generateRes.ok) {
-          const errJson = await generateRes.json().catch(() => ({}));
-          alert(errJson.error || "簡報建立失敗");
-          return;
-        }
-
-        const blob = await generateRes.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${title || "presentation"}.pptx`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        window.URL.revokeObjectURL(url);
-
+        // 不 generate，直接進編修頁
         window.location.href = `${meta.editPage}?presentationId=${presentationId}`;
       } catch (err) {
         console.error(err);
