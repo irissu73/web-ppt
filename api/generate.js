@@ -3,6 +3,29 @@ import { buildTravelSlides } from "../builders/buildTravelSlides.js";
 import { sendNotificationEmail } from "../lib/sendNotificationEmail.js";
 import { systemConfig } from "../config/systemConfig.js";
 
+function applyBaseLayout(slide, pptx) {
+  // 背景
+  slide.background = { fill: "F7F7FB" };
+
+  // 上方色條
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 0,
+    y: 0,
+    w: "100%",
+    h: 0.8,
+    fill: { color: "4F46E5" }
+  });
+
+  // footer
+  slide.addText("IRIS AI PPT", {
+    x: 0.5,
+    y: 6.5,
+    fontSize: 10,
+    color: "6B7280"
+  });
+}
+
+
 function buildCompareSlides(data) {
   return {
     title: data.title,
@@ -98,7 +121,103 @@ async function generatePptBuffer(slideJson) {
 
   for (const slide of slideJson.slides) {
     const s = pptx.addSlide();
+    
+if (slide.slideType === "cover") {
+  const s = pptx.addSlide();
+  applyBaseLayout(s, pptx);
 
+  // 主標
+  s.addText(slide.title || "", {
+    x: 1,
+    y: 2,
+    w: 8,
+    h: 1,
+    fontSize: 36,
+    bold: true,
+    color: "111827",
+    align: "center"
+  });
+
+  // 副標
+  s.addText(slide.subtitle || "", {
+    x: 1,
+    y: 3,
+    w: 8,
+    h: 0.8,
+    fontSize: 18,
+    color: "6B7280",
+    align: "center"
+  });
+
+  continue;
+}
+
+if (slide.slideType === "timeline") {
+  const s = pptx.addSlide();
+  applyBaseLayout(s, pptx);
+
+  // 標題
+  s.addText(slide.title || "", {
+    x: 0.7,
+    y: 0.2,
+    fontSize: 20,
+    bold: true,
+    color: "FFFFFF"
+  });
+
+  // 分隔線
+  s.addShape(pptx.ShapeType.rect, {
+    x: 0.5,
+    y: 1.2,
+    w: 9,
+    h: 0.03,
+    fill: { color: "E5E7EB" }
+  });
+
+  // 內容
+  const items = slide.items || [];
+
+  items.forEach((item, i) => {
+    s.addText(`• ${item}`, {
+      x: 0.8,
+      y: 1.5 + i * 0.6,
+      fontSize: 18,
+      color: "111827"
+    });
+  });
+
+  continue;
+}
+
+if (slide.slideType === "bullet") {
+  const s = pptx.addSlide();
+  applyBaseLayout(s, pptx);
+
+  // 標題
+  s.addText(slide.title || "", {
+    x: 0.7,
+    y: 0.2,
+    fontSize: 20,
+    bold: true,
+    color: "FFFFFF"
+  });
+
+  const points = slide.points || [];
+
+  points.forEach((p, i) => {
+    s.addText(`• ${p}`, {
+      x: 1,
+      y: 1.5 + i * 0.6,
+      fontSize: 20,
+      color: "111827"
+    });
+  });
+
+  continue;
+}
+
+
+/*
     if (slide.slideType === "cover") {
       s.addText(slide.title || "", {
         x: 0.8, y: 1.2, w: 11, h: 0.8,
@@ -146,7 +265,7 @@ async function generatePptBuffer(slideJson) {
 
       continue;
     }
-
+*/
     if (slide.slideType === "compare") {
       s.addText(slide.title || "", {
         x: 0.8, y: 0.6, w: 11, h: 0.5,
