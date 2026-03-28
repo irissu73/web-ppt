@@ -12,6 +12,12 @@ function buildEditUrl({ type, presentationId }) {
   return `${baseUrl}/${type}.html?presentationId=${presentationId}`;
 }
 
+function normalizeDateString(value) {
+  if (!value) return "";
+  // 只取 YYYY-MM-DD，避免時間或格式差異誤判
+  return String(value).slice(0, 10);
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
@@ -24,7 +30,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "缺少 presentationId" });
     }
 
-    // ===== 先查舊資料（判斷是否存在 & expiresAt 是否改變）=====
+    // 先查舊資料
     const { data: existing, error: fetchError } = await supabase
       .from("presentations")
       .select("*")
@@ -37,26 +43,27 @@ export default async function handler(req, res) {
     }
 
     const isNew = !existing;
-    const oldExpiresAt = existing?.expiresAt || null;
-    const newExpiresAt = presentation.expiresAt || null;
+    const oldExpiresAt = normalizeDateString(existing?.expiresAt);
+    const newExpiresAt = normalizeDateString(presentation.expiresAt);
 
-    // ===== upsert =====
+    // 儲存
     const { data, error } = await supabase
-  .from("presentations")
-  .upsert(
-    {
-      presentationId: presentation.presentationId,
-      type: presentation.type,
-      title: presentation.title,
-      email: presentation.email,
-      expiresAt: presentation.expiresAt,
-      data: presentation.data || {}
-    },
-    {
-      onConflict: "presentationId"
-    }
-  )
-  .select();
+      .from("presentations")
+      .upsert(
+        {
+          presentationId: presentation.presentationId,
+          type: presentation.type,
+          title: presentation.title,
+          email: presentation.email,
+          expiresAt: presentation.expiresAt,
+          data: presentation.data || {}
+        },
+        {
+          onConflict: "presentationId"
+        }
+      )
+      .select();
+
     if (error) {
       console.error("supabase upsert error =", error);
       return res.status(500).json({
@@ -65,13 +72,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // ===== 判斷是否要寄信 =====
-    const shouldSendEmail =
-      systemConfig.sendEmailEnabled &&
-      presentation.email &&
-      presentation.email.trim() !== "";
+    // 只有「新建」或「保留日改變」才寄
+    const hasEmail =
+      !!presentation.email && presentation.email.trim() !== "";
 
-    if (shouldSendEmail) {
+    const shouldConsiderSend =
+      systemConfig.sendEmailEnabled && hasEmail;
+
+    if (shouldConsiderSend) {
       let status = null;
 
       if (isNew) {
